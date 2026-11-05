@@ -1,5 +1,5 @@
 import { BackupBanner } from '../../components/BackupBanner';
-import { IconCart, IconDatabase, IconGear, IconScissors } from '../../components/Icons';
+import { IconDatabase, IconGear, IconScissors } from '../../components/Icons';
 import { Page, Row, Section } from '../../components/ui';
 import { useServices, useSettings } from '../../db/hooks';
 import { fmt } from '../../lib/format';
@@ -14,7 +14,6 @@ export function MorePage() {
       <BackupBanner />
       <Section>
         <Row icon={<IconScissors />} iconBg="#ff9500" title="Listino servizi" detail={active ? `${active}` : undefined} chevron onClick={() => navigate('/altro/listino')} />
-        <Row icon={<IconCart />} iconBg="#34c759" title="Spese" chevron onClick={() => navigate('/altro/spese')} />
       </Section>
       <Section>
         <Row icon={<IconGear />} iconBg="#8e8e93" title="Impostazioni" chevron onClick={() => navigate('/altro/impostazioni')} />

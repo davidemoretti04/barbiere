@@ -22,7 +22,10 @@ export function ClientsPage() {
   const appts = useAllAppointments();
   const settings = useSettings();
   const { confirm, toast } = useFeedback();
-  const [tab, setTabState] = useState<Tab>(lastTab);
+  const [tab, setTabState] = useState<Tab>(() => {
+    const q = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('tab');
+    return q === 'tutti' || q === 'ricontattare' || q === 'compleanni' ? q : lastTab;
+  });
   const setTab = (t: Tab) => {
     lastTab = t;
     setTabState(t);

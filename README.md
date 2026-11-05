@@ -95,10 +95,18 @@ I file si aprono con Excel o Numbers.
 
 ## 4. Come si usa (in breve)
 
+Le schede in basso sono: **Home · Agenda · Clienti · Statistiche · Spese · Altro**.
+
+- **Home** (si apre all’avvio): incassato di oggi rispetto al previsto, prossimo appuntamento (con **Incassa** se è in corso),
+  appuntamenti passati **da incassare**, i successivi, incassi di settimana e mese, ultimi 7 giorni, compleanni e clienti da ricontattare.
 - **Nuovo appuntamento**: in *Agenda* tocca uno spazio libero (oppure **+** in alto).
   Scrivi il nome del cliente: se non esiste tocca **Nuovo cliente «…»** e aggiungi il telefono. Tocca i servizi
   (durata e prezzo si calcolano da soli e si possono modificare) → **Aggiungi**.
   Se l’orario si sovrappone a un altro o è fuori orario compare un avviso, ma puoi salvare comunque.
+- **Appuntamenti ricorrenti** (clienti abituali): nel nuovo appuntamento scegli **Ripeti** (ogni 1–8 settimane) e **Quante volte**:
+  vengono creati tutti gli appuntamenti alla stessa ora, con avviso se qualcuno si sovrappone o cade in un giorno di chiusura.
+  La stella ★ indica l’intervallo con cui il cliente viene di solito. Annullando o eliminando un appuntamento della serie puoi scegliere
+  **Solo questo** o **Questo e i successivi**. Nella scheda cliente la sezione *Cliente abituale* mostra la serie attiva.
 - **Incassare**: tocca l’appuntamento → **Segna come completato** → controlla l’importo (sconto/extra),
   mancia e metodo di pagamento (facoltativi) → **Incassa**. Solo gli appuntamenti completati contano negli incassi.
 - **Promemoria**: dal dettaglio dell’appuntamento, **Promemoria** apre WhatsApp con il messaggio pronto
@@ -108,13 +116,19 @@ I file si aprono con Excel o Numbers.
 - **Scorri a sinistra** sulle righe (settimana, clienti, listino, spese) per le azioni rapide.
 - **Clienti → Da ricontattare**: chi non viene da più di X settimane (soglia in *Impostazioni*), con tasto WhatsApp.
 - **Statistiche**: scegli Oggi/Settimana/Mese/Anno/Personalizzato; ogni numero è confrontato con il periodo precedente.
+  **Tocca un riquadro** (Incasso, Completati, Mance, Spese, Utile…) o un servizio per vedere l’elenco che lo compone.
 
 ---
 
 ## 5. Aggiornare l’app
 
-Quando pubblichi una nuova versione, alla successiva apertura compare **“Nuova versione disponibile — Aggiorna”**.
-I dati non vengono toccati dall’aggiornamento.
+1. Chi sviluppa modifica il codice sul ramo `main` di GitHub: il workflow ricostruisce e ripubblica l’app da solo (1–2 minuti).
+2. Sul telefono, quando apri l’app (con internet) lei controlla se online c’è una versione nuova; se resta aperta, ricontrolla ogni ora.
+3. La nuova versione si scarica in silenzio e compare il banner **“Nuova versione disponibile”** con **Aggiorna** e **Dopo**.
+4. **Aggiorna** ricarica l’app con la versione nuova. **Dopo** la lascia com’è: l’aggiornamento verrà riproposto alla prossima apertura.
+
+I dati (clienti, appuntamenti, spese) **non vengono toccati** dall’aggiornamento: se cambia il formato dei dati l’app lo converte da sola.
+Senza internet continui a usare la versione che hai; l’aggiornamento arriverà la prima volta che sei online.
 
 ---
 

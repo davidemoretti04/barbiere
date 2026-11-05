@@ -1,4 +1,7 @@
-import { deleteAppointment, setAppointmentStatus } from '../../db/actions';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/db';
+import { deleteAppointment, deleteMany, setAppointmentStatus, setStatusMany } from '../../db/actions';
+import { repeatLabel, seriesFrom } from '../../lib/recurrence';
 import { useAppointment, useClient, useSettings } from '../../db/hooks';
 import { useFeedback } from '../../components/feedback-context';
 import { IconCalendarPlus, IconChat, IconCheck, IconPencil, IconPhone, IconSms } from '../../components/Icons';
@@ -25,7 +28,9 @@ export function AppointmentDetail({
   const a = useAppointment(id);
   const client = useClient(a?.clientId) ?? undefined;
   const settings = useSettings();
-  const { confirm, toast } = useFeedback();
+  const { confirm, choose, toast } = useFeedback();
+  const seriesId = a?.seriesId;
+  const seriesAll = useLiveQuery(() => (seriesId ? db.appointments.where('seriesId').equals(seriesId).toArray() : []), [seriesId]);
 
   if (!a) {
     return (
@@ -42,8 +47,34 @@ export function AppointmentDetail({
   const tel = client?.phone ? telLink(client.phone) : null;
   const minutes = Math.round((a.end - a.start) / 60000);
 
+  const following = a.seriesId && seriesAll ? seriesFrom(seriesAll, a) : [a];
+  const futureCount = following.length - 1;
+
+  /** Per le serie chiede se agire solo su questo o anche sui successivi. null = annullato dall'utente. */
+  async function scope(action: string, destructive: boolean): Promise<'one' | 'following' | null> {
+    if (!a || !a.seriesId || futureCount <= 0) return 'one';
+    const i = await choose({
+      title: `${action}: appuntamento ricorrente`,
+      message: `Ci sono altri ${futureCount} appuntamenti successivi in questa serie.`,
+      options: [
+        { label: 'Solo questo', destructive },
+        { label: `Questo e i successivi (${futureCount + 1})`, destructive },
+      ],
+      cancelLabel: 'Indietro',
+    });
+    return i === 0 ? 'one' : i === 1 ? 'following' : null;
+  }
+
   async function changeStatus(status: 'annullato' | 'non_presentato' | 'programmato', label: string) {
-    if (status === 'annullato') {
+    if (status === 'annullato' && a?.seriesId && futureCount > 0) {
+      const s = await scope('Annulla', true);
+      if (!s) return;
+      if (s === 'following') {
+        const undo = await setStatusMany(following.map((x) => x.id), 'annullato');
+        toast({ message: `${following.length} appuntamenti annullati`, actionLabel: 'Annulla', onAction: () => void undo() });
+        return;
+      }
+    } else if (status === 'annullato') {
       const ok = await confirm({ title: 'Annullare l’appuntamento?', message: 'Resterà nello storico come annullato.', confirmLabel: 'Annulla appuntamento', destructive: true, cancelLabel: 'Indietro' });
       if (!ok) return;
     }
@@ -52,6 +83,15 @@ export function AppointmentDetail({
   }
 
   async function remove() {
+    if (a?.seriesId && futureCount > 0) {
+      const s = await scope('Elimina', true);
+      if (!s) return;
+      const ids = s === 'following' ? following.map((x) => x.id) : [id];
+      const undo = await deleteMany(ids);
+      onClose();
+      toast({ message: ids.length > 1 ? `${ids.length} appuntamenti eliminati` : 'Appuntamento eliminato', actionLabel: 'Annulla', onAction: () => void undo() });
+      return;
+    }
     const ok = await confirm({
       title: 'Eliminare l’appuntamento?',
       message: 'Verrà rimosso anche dalle statistiche.',
@@ -83,8 +123,14 @@ export function AppointmentDetail({
         <p>
           {capitalize(fmt(a.start, 'EEEE d MMMM'))} · {fmt(a.start, 'HH:mm')}–{fmt(a.end, 'HH:mm')}
         </p>
-        <p style={{ marginTop: 8 }}>
+        <p style={{ marginTop: 8, display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
           <span className={`badge ${a.status}`}>{STATUS_LABEL[a.status]}</span>
+          {a.seriesId && (
+            <span className="badge programmato" style={{ background: 'var(--fill-2)', color: 'var(--label-2)' }}>
+              ↻ {repeatLabel(a.repeatWeeks ?? 1)}
+              {futureCount > 0 ? ` · altri ${futureCount}` : ''}
+            </span>
+          )}
         </p>
       </div>
 
@@ -158,7 +204,7 @@ export function AppointmentDetail({
           </button>
         )}
         {a.status === 'programmato' && (
-          <button type="button" className="row action" onClick={() => changeStatus('non_presentato', 'Segnato come non presentato')}>
+          <button type="button" className="row" style={{ color: 'var(--red)' }} onClick={() => changeStatus('non_presentato', 'Segnato come non presentato')}>
             <span className="row-main">Non si è presentato</span>
           </button>
         )}

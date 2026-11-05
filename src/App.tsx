@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { TabBar } from './components/TabBar';
 import { useSettings } from './db/hooks';
 import { AgendaPage } from './features/agenda/AgendaPage';
+import { HomePage } from './features/home/HomePage';
 import { AppointmentProvider } from './features/appointments/AppointmentProvider';
 import { ClientDetailPage } from './features/clients/ClientDetailPage';
 import { ClientsPage } from './features/clients/ClientsPage';
@@ -14,12 +15,29 @@ import { Onboarding } from './features/onboarding/Onboarding';
 import { matchPath, usePath } from './router';
 
 // Le statistiche (con i grafici) si caricano a parte: l'avvio dell'agenda resta rapido.
-const StatsPage = lazy(() => import('./features/stats/StatsPage').then((m) => ({ default: m.StatsPage })));
+// Se dopo un aggiornamento il file non esiste più (versione vecchia ancora aperta), ricarica una volta la pagina.
+const StatsPage = lazy(() =>
+  import('./features/stats/StatsPage')
+    .then((m) => {
+      sessionStorage.removeItem('chunk-reload');
+      return { default: m.StatsPage };
+    })
+    .catch((err: unknown) => {
+      if (!sessionStorage.getItem('chunk-reload')) {
+        sessionStorage.setItem('chunk-reload', '1');
+        window.location.reload();
+        return new Promise<never>(() => {});
+      }
+      throw err;
+    }),
+);
 
 function Routes({ path }: { path: string }) {
   const client = matchPath('/clienti/:id', path);
   if (client) return <ClientDetailPage key={client.id} id={client.id} />;
   switch (path.split('?')[0]) {
+    case '/agenda':
+      return <AgendaPage />;
     case '/clienti':
       return <ClientsPage />;
     case '/statistiche':
@@ -32,6 +50,7 @@ function Routes({ path }: { path: string }) {
       return <MorePage />;
     case '/altro/listino':
       return <ServicesPage />;
+    case '/spese':
     case '/altro/spese':
       return <ExpensesPage />;
     case '/altro/impostazioni':
@@ -39,7 +58,7 @@ function Routes({ path }: { path: string }) {
     case '/altro/backup':
       return <BackupPage />;
     default:
-      return <AgendaPage />;
+      return <HomePage />;
   }
 }
 

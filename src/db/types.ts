@@ -45,6 +45,10 @@ export interface Appointment {
   tipCents: Cents;
   paymentMethod?: PaymentMethod;
   notes: string;
+  /** Appuntamenti ricorrenti: stesso seriesId per tutta la serie. */
+  seriesId?: string;
+  /** Ogni quante settimane si ripete la serie. */
+  repeatWeeks?: number;
 }
 
 export interface Expense {

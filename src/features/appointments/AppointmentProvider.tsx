@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { db } from '../../db/db';
+import { db, getSettings } from '../../db/db';
+import { nextFreeSlot } from '../../lib/schedule';
 import type { Appointment } from '../../db/types';
 import { useFeedback } from '../../components/feedback-context';
 import { AppointmentDetail } from './AppointmentDetail';
@@ -19,7 +20,17 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
   const [sheet, setSheet] = useState<SheetState>(null);
   const { toast } = useFeedback();
 
-  const openNew = useCallback((prefill?: NewAppointmentPrefill) => setSheet({ kind: 'new', prefill }), []);
+  const openNew = useCallback(async (prefill?: NewAppointmentPrefill) => {
+    if (prefill?.start !== undefined) return setSheet({ kind: 'new', prefill });
+    // senza orario indicato: proponi il primo slot libero da adesso
+    const settings = await getSettings();
+    const now = new Date();
+    const busy = (await db.appointments.where('start').between(now.getTime() - 86400000, now.getTime() + 15 * 86400000).toArray()).filter(
+      (a) => a.status === 'programmato' || a.status === 'completato',
+    );
+    const start = nextFreeSlot(now, settings.defaultDurationMinutes, settings, busy).getTime();
+    setSheet({ kind: 'new', prefill: { ...prefill, start } });
+  }, []);
   const openDetail = useCallback((id: string) => setSheet({ kind: 'detail', id }), []);
   const openEdit = useCallback(async (id: string) => {
     const appt = await db.appointments.get(id);
@@ -30,7 +41,10 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
     if (appt) setSheet({ kind: 'checkout', appt });
   }, []);
 
-  const value = useMemo(() => ({ openNew, openDetail, openEdit: (id: string) => void openEdit(id) }), [openNew, openDetail, openEdit]);
+  const value = useMemo(
+    () => ({ openNew: (p?: NewAppointmentPrefill) => void openNew(p), openDetail, openEdit: (id: string) => void openEdit(id), openCheckout: (id: string) => void openCheckout(id) }),
+    [openNew, openDetail, openEdit, openCheckout],
+  );
   const close = () => setSheet(null);
 
   return (
@@ -40,9 +54,9 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
         <AppointmentForm
           prefill={sheet.prefill}
           onClose={close}
-          onSaved={() => {
+          onSaved={(_id, count) => {
             close();
-            toast('Appuntamento aggiunto');
+            toast(count > 1 ? `Creati ${count} appuntamenti ricorrenti` : 'Appuntamento aggiunto');
           }}
         />
       )}

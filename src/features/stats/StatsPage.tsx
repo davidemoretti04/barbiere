@@ -25,6 +25,7 @@ import {
   type RankItem,
 } from '../../lib/stats';
 import { navigate } from '../../router';
+import { StatDetailSheet, type StatDetailTarget } from './StatDetailSheet';
 import { useNow } from '../../hooks/useNow';
 
 const KIND_OPTIONS: { value: PeriodKind; label: string }[] = [
@@ -73,6 +74,8 @@ export function StatsPage() {
     setStateRaw(s);
   };
   const { kind, range } = state;
+  const [detail, setDetail] = useState<StatDetailTarget | null>(null);
+  const open = (k: StatDetailTarget['kind']) => () => setDetail({ kind: k });
 
   const setKind = (k: PeriodKind) => {
     if (k === 'custom') setState({ kind: k, range: customRange(subDays(new Date(), 29), new Date()) });
@@ -154,12 +157,13 @@ export function StatsPage() {
       {data && hasAny && (
         <>
           <div className="kpis">
-            <Kpi wide label="Incasso" value={formatEuro(data.kpi.revenueCents)} cur={data.kpi.revenueCents} prev={data.prev.revenueCents} prevLabel={PREV_LABEL[kind]} />
-            <Kpi label="Completati" value={String(data.kpi.completedCount)} cur={data.kpi.completedCount} prev={data.prev.completedCount} prevLabel={PREV_LABEL[kind]} />
-            <Kpi label="Scontrino medio" value={formatEuro(data.kpi.averageTicketCents)} cur={data.kpi.averageTicketCents} prev={data.prev.averageTicketCents} prevLabel={PREV_LABEL[kind]} />
-            <Kpi label="Mance" value={formatEuro(data.kpi.tipsCents)} cur={data.kpi.tipsCents} prev={data.prev.tipsCents} prevLabel={PREV_LABEL[kind]} />
-            <Kpi label="Nuovi clienti" value={String(data.kpi.newClients)} cur={data.kpi.newClients} prev={data.prev.newClients} prevLabel={PREV_LABEL[kind]} />
+            <Kpi onClick={open('revenue')} wide label="Incasso" value={formatEuro(data.kpi.revenueCents)} cur={data.kpi.revenueCents} prev={data.prev.revenueCents} prevLabel={PREV_LABEL[kind]} />
+            <Kpi onClick={open('completed')} label="Completati" value={String(data.kpi.completedCount)} cur={data.kpi.completedCount} prev={data.prev.completedCount} prevLabel={PREV_LABEL[kind]} />
+            <Kpi onClick={open('ticket')} label="Scontrino medio" value={formatEuro(data.kpi.averageTicketCents)} cur={data.kpi.averageTicketCents} prev={data.prev.averageTicketCents} prevLabel={PREV_LABEL[kind]} />
+            <Kpi onClick={open('tips')} label="Mance" value={formatEuro(data.kpi.tipsCents)} cur={data.kpi.tipsCents} prev={data.prev.tipsCents} prevLabel={PREV_LABEL[kind]} />
+            <Kpi onClick={open('newClients')} label="Nuovi clienti" value={String(data.kpi.newClients)} cur={data.kpi.newClients} prev={data.prev.newClients} prevLabel={PREV_LABEL[kind]} />
             <Kpi
+              onClick={open('cancelled')}
               label="Annullati / assenti"
               value={`${data.kpi.cancelledCount} / ${data.kpi.noShowCount}`}
               cur={data.kpi.cancelledCount + data.kpi.noShowCount}
@@ -167,8 +171,9 @@ export function StatsPage() {
               prevLabel={PREV_LABEL[kind]}
               lowerIsBetter
             />
-            <Kpi label="Spese" value={formatEuro(data.kpi.expensesCents)} cur={data.kpi.expensesCents} prev={data.prev.expensesCents} prevLabel={PREV_LABEL[kind]} lowerIsBetter />
+            <Kpi onClick={open('expenses')} label="Spese" value={formatEuro(data.kpi.expensesCents)} cur={data.kpi.expensesCents} prev={data.prev.expensesCents} prevLabel={PREV_LABEL[kind]} lowerIsBetter />
             <Kpi
+              onClick={open('profit')}
               wide
               label="Utile (incassi + mance − spese)"
               value={formatEuro(data.kpi.profitCents)}
@@ -216,7 +221,7 @@ export function StatsPage() {
           </Section>
 
           <Section header="Servizi più richiesti" group={false}>
-            <RankList items={data.services} metric="count" empty="Nessun servizio completato nel periodo." />
+            <RankList items={data.services} metric="count" empty="Nessun servizio completato nel periodo." onClick={(id, name) => setDetail({ kind: 'service', serviceKey: id, serviceName: name })} />
           </Section>
 
           <Section header="Migliori clienti per spesa" group={false}>
@@ -244,11 +249,23 @@ export function StatsPage() {
           </Section>
         </>
       )}
+      {detail && appts && clients && expenses && (
+        <StatDetailSheet
+          target={detail}
+          range={range}
+          rangeLabel={rangeLabel(kind, range)}
+          appts={appts}
+          clients={clients}
+          expenses={expenses}
+          onClose={() => setDetail(null)}
+        />
+      )}
     </Page>
   );
 }
 
 function Kpi({
+  onClick,
   label,
   value,
   cur,
@@ -258,6 +275,7 @@ function Kpi({
   lowerIsBetter,
   negative,
 }: {
+  onClick: () => void;
   label: string;
   value: string;
   cur: number;
@@ -277,13 +295,15 @@ function Kpi({
     text = `${pct > 0 ? '▲' : '▼'} ${Math.abs(Math.round(pct))}% vs ${prevLabel}`;
   }
   return (
-    <div className={`kpi ${wide ? 'wide' : ''}`}>
-      <div className="k-label">{label}</div>
+    <button type="button" className={`kpi pressable ${wide ? 'wide' : ''}`} onClick={onClick} aria-label={`${label}: ${value}. Vedi dettaglio`}>
+      <div className="k-label">
+        {label} <span aria-hidden="true" style={{ color: 'var(--label-3)', float: 'right' }}>›</span>
+      </div>
       <div className="k-value" style={negative ? { color: 'var(--red)' } : undefined}>
         {value}
       </div>
       <div className={`k-delta ${cls}`}>{text}</div>
-    </div>
+    </button>
   );
 }
 
@@ -346,7 +366,7 @@ function RankList({
   items: RankItem[];
   metric: 'count' | 'revenue';
   empty: string;
-  onClick?: (id: string) => void;
+  onClick?: (id: string, name: string) => void;
 }) {
   if (!items.length)
     return (
@@ -376,7 +396,7 @@ function RankList({
           return (
             <li key={i.id}>
               {onClick ? (
-                <button type="button" style={{ width: '100%', textAlign: 'left', minHeight: 44 }} onClick={() => onClick(i.id)}>
+                <button type="button" style={{ width: '100%', textAlign: 'left', minHeight: 44 }} onClick={() => onClick(i.id, i.name)}>
                   {content}
                 </button>
               ) : (

@@ -4,7 +4,7 @@ import { useFeedback } from '../../components/feedback-context';
 import { IconCart, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/Icons';
 import { Sheet } from '../../components/Sheet';
 import { SwipeRow } from '../../components/SwipeRow';
-import { BackButton, EmptyState, Field, Page, Row, Section } from '../../components/ui';
+import { EmptyState, Field, Page, Row, Section } from '../../components/ui';
 import { deleteExpense, saveExpense } from '../../db/actions';
 import { useExpenses } from '../../db/hooks';
 import { EXPENSE_CATEGORIES, type Expense } from '../../db/types';
@@ -37,7 +37,6 @@ export function ExpensesPage() {
   return (
     <Page
       title="Spese"
-      left={<BackButton label="Altro" fallback="/altro" />}
       right={
         <button type="button" className="nav-btn" onClick={() => setEditing('new')} aria-label="Nuova spesa">
           <IconPlus />

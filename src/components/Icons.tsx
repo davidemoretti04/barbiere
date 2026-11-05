@@ -108,3 +108,9 @@ export const IconDatabase = (p: P) => (
 export const IconCart = (p: P) => (
   <svg {...base(p)}><path d="M3 4h2.5l2.2 11h10.6l2-7.5H6.5" /><circle cx="9" cy="19.5" r="1.4" /><circle cx="17" cy="19.5" r="1.4" /></svg>
 );
+export const IconHome = (p: P) => (
+  <svg {...base(p)}><path d="M3.5 11L12 4l8.5 7" /><path d="M5.5 9.5V20h5v-5.5h3V20h5V9.5" /></svg>
+);
+export const IconUserPlus = (p: P) => (
+  <svg {...base(p)}><circle cx="10" cy="8" r="3.5" /><path d="M3.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M19 8v6M16 11h6" /></svg>
+);

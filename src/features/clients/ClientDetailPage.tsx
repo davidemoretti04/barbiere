@@ -8,6 +8,8 @@ import { clientName, fmt, initials, servicesLabel, STATUS_LABEL } from '../../li
 import { formatEuro } from '../../lib/money';
 import { formatPhone, telLink, whatsappLink } from '../../lib/phone';
 import { clientStats } from '../../lib/stats';
+import { repeatLabel, suggestedRepeatWeeks } from '../../lib/recurrence';
+import { useNow } from '../../hooks/useNow';
 import { navigate } from '../../router';
 import { useAppointmentUI } from '../appointments/context';
 import { ClientForm } from './ClientForm';
@@ -18,6 +20,7 @@ export function ClientDetailPage({ id }: { id: string }) {
   const ui = useAppointmentUI();
   const { confirm, toast } = useFeedback();
   const [editing, setEditing] = useState(false);
+  const now = useNow();
   const back = <BackButton label="Clienti" fallback="/clienti" />;
 
   if (client === null) {
@@ -29,7 +32,11 @@ export function ClientDetailPage({ id }: { id: string }) {
   }
   if (!client) return <Page title="" left={back} largeTitle={false}>{null}</Page>;
 
-  const s = clientStats(appts ?? [], id);
+  const s = clientStats(appts ?? [], id, now);
+  const nextSeries = (appts ?? [])
+    .filter((a) => a.seriesId && a.status === 'programmato' && a.start >= now)
+    .sort((a, b) => a.start - b.start);
+  const suggested = suggestedRepeatWeeks(s.averageGapDays);
   const wa = client.phone ? whatsappLink(client.phone, `Ciao ${client.firstName}! `) : null;
   const tel = client.phone ? telLink(client.phone) : null;
 
@@ -88,6 +95,28 @@ export function ClientDetailPage({ id }: { id: string }) {
           <IconCalendarPlus /> Prenota
         </button>
       </div>
+
+      <Section
+        header="Cliente abituale"
+        footer={
+          nextSeries.length
+            ? undefined
+            : suggested
+              ? `Di solito viene ${repeatLabel(suggested).toLowerCase()}. Prenota e scegli «Ripeti» per fissare in un colpo i prossimi appuntamenti.`
+              : 'Prenota e scegli «Ripeti» per fissare in un colpo i prossimi appuntamenti.'
+        }
+      >
+        {nextSeries.length ? (
+          <Row
+            title={`↻ ${repeatLabel(nextSeries[0].repeatWeeks ?? 1)}`}
+            sub={`Prossimo ${fmt(nextSeries[0].start, "EEE d MMM 'alle' HH:mm")} · ${nextSeries.length} in programma`}
+            chevron
+            onClick={() => ui.openDetail(nextSeries[0].id)}
+          />
+        ) : (
+          <Row title="Imposta appuntamenti ricorrenti" className="action" onClick={() => ui.openNew({ clientId: id })} />
+        )}
+      </Section>
 
       <div className="kpis">
         <div className="kpi">

@@ -37,6 +37,34 @@ export async function saveAppointment(a: Appointment): Promise<void> {
   await db.appointments.put(copy);
 }
 
+/** Salva in un colpo tutte le occorrenze di una serie. */
+export async function saveAppointments(list: Appointment[]): Promise<void> {
+  await db.appointments.bulkPut(
+    list.map((a) => {
+      const copy = { ...a };
+      if (!copy.paymentMethod) delete copy.paymentMethod;
+      return copy;
+    }),
+  );
+}
+
+/** Cambia lo stato di più appuntamenti (es. annulla la serie); ritorna una funzione per annullare. */
+export async function setStatusMany(ids: string[], status: Appointment['status']): Promise<() => Promise<void>> {
+  const before = (await db.appointments.bulkGet(ids)).filter((a): a is Appointment => !!a);
+  await db.appointments.bulkPut(before.map((a) => ({ ...a, status })));
+  return async () => {
+    await db.appointments.bulkPut(before);
+  };
+}
+
+export async function deleteMany(ids: string[]): Promise<() => Promise<void>> {
+  const before = (await db.appointments.bulkGet(ids)).filter((a): a is Appointment => !!a);
+  await db.appointments.bulkDelete(ids);
+  return async () => {
+    await db.appointments.bulkPut(before);
+  };
+}
+
 export async function deleteAppointment(id: string): Promise<() => Promise<void>> {
   const a = await db.appointments.get(id);
   await db.appointments.delete(id);

@@ -146,6 +146,10 @@ function validateAppointment(v: unknown, i: number): Appointment {
     notes: isStr(o.notes) ? o.notes : '',
   };
   if (isStr(o.paymentMethod)) a.paymentMethod = o.paymentMethod as Appointment['paymentMethod'];
+  req(o.seriesId === undefined || isStr(o.seriesId), 'Appuntamento', i, 'seriesId');
+  req(o.repeatWeeks === undefined || (isInt(o.repeatWeeks) && o.repeatWeeks > 0), 'Appuntamento', i, 'repeatWeeks');
+  if (isStr(o.seriesId) && o.seriesId) a.seriesId = o.seriesId;
+  if (isInt(o.repeatWeeks)) a.repeatWeeks = o.repeatWeeks;
   return a;
 }
 
@@ -180,8 +184,9 @@ function validateSettings(v: unknown): Settings {
  */
 export function migrateBackup(raw: Obj, fromVersion: number): Obj {
   const out = raw;
-  // if (fromVersion < 2) { ...trasforma out.data... }
-  void fromVersion;
+  if (fromVersion < 2) {
+    // v1 → v2: aggiunti i campi facoltativi seriesId/repeatWeeks agli appuntamenti. Nulla da convertire.
+  }
   return out;
 }
 

@@ -85,7 +85,7 @@ export function BackupPage() {
       await importBackup(db, preview.backup, mode);
       setPreview(null);
       toast(mode === 'replace' ? 'Backup ripristinato' : 'Dati uniti al backup');
-      navigate('/agenda', { replace: true });
+      navigate('/home', { replace: true });
     } catch {
       toast('Importazione non riuscita: i dati attuali non sono stati modificati.');
     } finally {
@@ -140,7 +140,7 @@ export function BackupPage() {
     });
     if (!second) return;
     await clearAllData(db);
-    navigate('/agenda', { replace: true });
+    navigate('/home', { replace: true });
   }
 
   return (

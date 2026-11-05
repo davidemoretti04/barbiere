@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
  */
 function getPath(): string {
   const h = window.location.hash.replace(/^#/, '');
-  return h.startsWith('/') ? h : '/agenda';
+  return h.startsWith('/') ? h : '/home';
 }
 
 function subscribe(cb: () => void) {
@@ -15,7 +15,7 @@ function subscribe(cb: () => void) {
 }
 
 export function usePath(): string {
-  return useSyncExternalStore(subscribe, getPath, () => '/agenda');
+  return useSyncExternalStore(subscribe, getPath, () => '/home');
 }
 
 export function navigate(path: string, opts: { replace?: boolean } = {}) {

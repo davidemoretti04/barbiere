@@ -1,7 +1,7 @@
-import { addDays } from 'date-fns';
+import { addDays, addWeeks } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { createClient, saveAppointment } from '../../db/actions';
-import { useAppointmentsBetween, useClients, useServices, useSettings } from '../../db/hooks';
+import { createClient, saveAppointment, saveAppointments } from '../../db/actions';
+import { useAppointmentsBetween, useClientAppointments, useClients, useServices, useSettings } from '../../db/hooks';
 import type { Appointment, AppointmentService } from '../../db/types';
 import { IconCheck, IconPlus, IconSearch, IconWarning } from '../../components/Icons';
 import { Sheet } from '../../components/Sheet';
@@ -13,13 +13,16 @@ import { findOverlaps } from '../../lib/overlap';
 import { formatPhone, normalizePhone } from '../../lib/phone';
 import { atMinutes, closureFor, fromDateKey, isWithinWorkingHours, parseHM, roundUpToSlot, toDateKey } from '../../lib/schedule';
 import { matchClient } from '../../lib/search';
+import { buildSeries, repeatLabel, REPEAT_COUNT_OPTIONS, REPEAT_WEEKS_OPTIONS, seriesIssues, suggestedRepeatWeeks } from '../../lib/recurrence';
+import { clientStats } from '../../lib/stats';
 import type { NewAppointmentPrefill } from './context';
 
 interface Props {
   editing?: Appointment;
   prefill?: NewAppointmentPrefill;
   onClose: () => void;
-  onSaved: (id: string) => void;
+  /** count = numero di appuntamenti creati (più di 1 per una serie). */
+  onSaved: (id: string, count: number) => void;
 }
 
 const sumDur = (s: AppointmentService[]) => s.reduce((t, x) => t + x.durationMinutes, 0);
@@ -45,6 +48,8 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
     editing && editing.amountCents !== sumPrice(editing.services) ? centsToInput(editing.amountCents) : null,
   );
   const [notes, setNotes] = useState(editing?.notes ?? '');
+  const [repeatWeeks, setRepeatWeeks] = useState(0);
+  const [repeatCount, setRepeatCount] = useState(6);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -58,6 +63,14 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
   const startMs = time ? atMinutes(day, parseHM(time)).getTime() : NaN;
   const endMs = startMs + (Number.isFinite(duration) ? duration : 0) * 60000;
   const dayAppts = useAppointmentsBetween(day.getTime(), addDays(day, 1).getTime());
+  const repeating = !editing && repeatWeeks > 0;
+  const lastStart = repeating && Number.isFinite(startMs) ? addWeeks(new Date(startMs), repeatWeeks * (repeatCount - 1)).getTime() : startMs;
+  const seriesAppts = useAppointmentsBetween(
+    repeating && Number.isFinite(startMs) ? startMs : 0,
+    repeating && Number.isFinite(lastStart) ? lastStart + 86400000 : 0,
+  );
+  const clientHistory = useClientAppointments(clientId ?? undefined);
+  const suggested = clientId && clientHistory ? suggestedRepeatWeeks(clientStats(clientHistory, clientId).averageGapDays) : null;
 
   const client = clients?.find((c) => c.id === clientId);
   const activeServices = useMemo(
@@ -78,6 +91,23 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
   const overlaps = Number.isFinite(startMs) ? findOverlaps({ start: startMs, end: endMs }, dayAppts ?? [], editing?.id) : [];
   const closure = settings ? closureFor(day, settings) : undefined;
   const outside = settings && Number.isFinite(startMs) && duration > 0 && !isWithinWorkingHours(startMs, endMs, settings);
+  const seriesWarnings =
+    repeating && settings && Number.isFinite(startMs) && duration > 0
+      ? seriesIssues(
+          buildSeries(
+            { id: 'nuovo', clientId: clientId ?? '', start: startMs, end: endMs, services: [], status: 'programmato', amountCents: 0, tipCents: 0, notes: '' },
+            repeatWeeks,
+            repeatCount,
+            (() => {
+              let i = 0;
+              return () => `anteprima-${i++}`;
+            })(),
+            'anteprima',
+          ).slice(1),
+          seriesAppts ?? [],
+          settings,
+        )
+      : [];
   const nameOf = (id: string) => clientName(clients?.find((c) => c.id === id));
 
   function toggleService(s: { id: string; name: string; priceCents: number; durationMinutes: number }) {
@@ -130,8 +160,14 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
         paymentMethod: editing?.paymentMethod,
         notes: notes.trim(),
       };
-      await saveAppointment(appt);
-      onSaved(appt.id);
+      if (repeating) {
+        const series = buildSeries(appt, repeatWeeks, repeatCount, newId, newId());
+        await saveAppointments(series);
+        onSaved(appt.id, series.length);
+      } else {
+        await saveAppointment(appt);
+        onSaved(appt.id, 1);
+      }
     } catch {
       setError('Non è stato possibile salvare. Riprova.');
       setSaving(false);
@@ -320,6 +356,62 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
             )}
             {outside && <div>{closure ? `Giorno di chiusura: ${closure.label || 'chiuso'}.` : 'È fuori dall’orario di lavoro.'}</div>}
             <div className="muted small">Puoi salvare comunque.</div>
+          </div>
+        </div>
+      )}
+
+      {/* ----- Ripeti (clienti abituali) ----- */}
+      {!editing ? (
+        <Section
+          header="Ripeti"
+          footer={
+            repeating && Number.isFinite(startMs)
+              ? `${repeatCount} appuntamenti, ${repeatLabel(repeatWeeks).toLowerCase()}, fino a ${fmt(lastStart, 'EEEE d MMMM yyyy')}.`
+              : 'Per i clienti abituali: crea in un colpo gli appuntamenti futuri alla stessa ora.'
+          }
+        >
+          <div className="field" style={{ minHeight: 52, paddingTop: 8, paddingBottom: 8 }}>
+            <div className="chips" role="group" aria-label="Ogni quante settimane">
+              <button type="button" className="chip" aria-pressed={repeatWeeks === 0} onClick={() => setRepeatWeeks(0)}>
+                Mai
+              </button>
+              {REPEAT_WEEKS_OPTIONS.map((w) => (
+                <button key={w} type="button" className="chip" aria-pressed={repeatWeeks === w} onClick={() => setRepeatWeeks(w)}>
+                  {w === 1 ? 'Ogni sett.' : `${w} sett.`}
+                  {suggested === w && repeatWeeks !== w ? ' ★' : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+          {suggested !== null && repeatWeeks === 0 && (
+            <button type="button" className="row action" onClick={() => setRepeatWeeks(suggested)}>
+              <span className="row-main small">★ Di solito viene {repeatLabel(suggested).toLowerCase()}: usa questo intervallo</span>
+            </button>
+          )}
+          {repeating && (
+            <div className="field" style={{ minHeight: 52, paddingTop: 8, paddingBottom: 8 }}>
+              <span style={{ minWidth: 0, marginRight: 4 }}>Quante volte</span>
+              <div className="chips" role="group" aria-label="Numero di appuntamenti">
+                {REPEAT_COUNT_OPTIONS.map((c) => (
+                  <button key={c} type="button" className="chip" aria-pressed={repeatCount === c} onClick={() => setRepeatCount(c)}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </Section>
+      ) : editing.seriesId ? (
+        <p className="section-footer" style={{ margin: '-16px 16px 24px' }}>
+          Fa parte di una serie ({repeatLabel(editing.repeatWeeks ?? 1).toLowerCase()}): la modifica vale solo per questo appuntamento.
+        </p>
+      ) : null}
+      {seriesWarnings.length > 0 && (
+        <div className="warn" role="status">
+          <IconWarning />
+          <div>
+            Nella serie: {seriesWarnings.map((w) => `${fmt(w.appointment.start, 'd MMM')} (${w.overlap ? 'sovrapposto' : 'fuori orario o chiuso'})`).join(', ')}.
+            <div className="muted small">Verranno creati comunque: potrai spostarli dopo.</div>
           </div>
         </div>
       )}
