@@ -3,9 +3,10 @@ import { useMemo, useState } from 'react';
 import { createClient, saveAppointment, saveAppointments } from '../../db/actions';
 import { useAppointmentsBetween, useClientAppointments, useClients, useServices, useSettings } from '../../db/hooks';
 import type { Appointment, AppointmentService } from '../../db/types';
-import { IconCheck, IconPlus, IconSearch, IconWarning } from '../../components/Icons';
+import { IconCalendarPlus, IconCheck, IconPlus, IconSearch, IconWarning } from '../../components/Icons';
 import { Sheet } from '../../components/Sheet';
-import { Field, Section } from '../../components/ui';
+import { Field, Section, Switch } from '../../components/ui';
+import { addToCalendar } from './calendar';
 import { clientName, durationLabel, fmt, initials } from '../../lib/format';
 import { newId } from '../../lib/id';
 import { centsToInput, formatEuro, parseEuro } from '../../lib/money';
@@ -50,6 +51,7 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [repeatWeeks, setRepeatWeeks] = useState(0);
   const [repeatCount, setRepeatCount] = useState(6);
+  const [toCalendar, setToCalendar] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -160,14 +162,17 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
         paymentMethod: editing?.paymentMethod,
         notes: notes.trim(),
       };
-      if (repeating) {
-        const series = buildSeries(appt, repeatWeeks, repeatCount, newId, newId());
-        await saveAppointments(series);
-        onSaved(appt.id, series.length);
-      } else {
-        await saveAppointment(appt);
-        onSaved(appt.id, 1);
+      const saved = repeating ? buildSeries(appt, repeatWeeks, repeatCount, newId, newId()) : [appt];
+      if (repeating) await saveAppointments(saved);
+      else await saveAppointment(appt);
+      // Calendario di Apple: iOS mostra l'evento (o tutta la serie) con «Aggiungi»
+      if (!editing && toCalendar) {
+        const who = newClient
+          ? { firstName: newClient.first.trim(), lastName: newClient.last.trim(), phone: newClient.phone.trim() }
+          : client;
+        addToCalendar(saved, who);
       }
+      onSaved(appt.id, saved.length);
     } catch {
       setError('Non è stato possibile salvare. Riprova.');
       setSaving(false);
@@ -414,6 +419,23 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
             <div className="muted small">Verranno creati comunque: potrai spostarli dopo.</div>
           </div>
         </div>
+      )}
+
+      {/* ----- Calendario di Apple ----- */}
+      {!editing && (
+        <Section
+          footer={
+            toCalendar
+              ? `Dopo il salvataggio iPhone mostra ${repeating ? `i ${repeatCount} eventi: tocca «Aggiungi tutti»` : 'l’evento: tocca «Aggiungi»'} per metterlo nel Calendario, con avviso 30 minuti prima.`
+              : 'L’appuntamento resterà solo in questa app.'
+          }
+        >
+          <div className="field" style={{ minHeight: 50 }}>
+            <IconCalendarPlus width={22} height={22} style={{ color: 'var(--red)', flex: 'none' }} />
+            <span style={{ flex: 1 }}>Aggiungi al Calendario</span>
+            <Switch checked={toCalendar} onChange={setToCalendar} label="Aggiungi al Calendario di iPhone" />
+          </div>
+        </Section>
       )}
 
       {/* ----- Importo e note ----- */}

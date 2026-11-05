@@ -90,6 +90,8 @@ export interface Settings {
   inactiveWeeks: number;
   /** Epoch ms dell'ultimo backup esportato, null se mai. */
   lastBackupAt: number | null;
+  /** Fino a quando (epoch ms) l'avviso del backup resta nascosto dopo averlo chiuso. */
+  backupReminderSnoozedUntil?: number | null;
 }
 
 export const WEEKDAYS: Weekday[] = [1, 2, 3, 4, 5, 6, 7];
@@ -125,6 +127,7 @@ export const DEFAULT_SETTINGS: Settings = {
     'Ciao {nome}! Ti ricordo l’appuntamento dal barbiere {data} alle {ora}. A presto!',
   inactiveWeeks: 6,
   lastBackupAt: null,
+  backupReminderSnoozedUntil: null,
 };
 
 export const EXPENSE_CATEGORIES = [

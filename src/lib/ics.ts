@@ -46,13 +46,8 @@ export function foldLine(line: string): string {
   return parts.join('\r\n ');
 }
 
-export function buildIcs(event: IcsEvent, now: number = Date.now()): string {
+function eventLines(event: IcsEvent, now: number): string[] {
   const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Barbiere Gestionale//IT',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
     'BEGIN:VEVENT',
     `UID:${event.uid}`,
     `DTSTAMP:${icsDate(now)}`,
@@ -71,6 +66,24 @@ export function buildIcs(event: IcsEvent, now: number = Date.now()): string {
       'END:VALARM',
     );
   }
-  lines.push('END:VEVENT', 'END:VCALENDAR');
+  lines.push('END:VEVENT');
+  return lines;
+}
+
+/** Calendario con uno o più eventi (es. tutta una serie ricorrente: iOS propone «Aggiungi tutti»). */
+export function buildIcsCalendar(events: IcsEvent[], now: number = Date.now()): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Barbiere Gestionale//IT',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    ...events.flatMap((e) => eventLines(e, now)),
+    'END:VCALENDAR',
+  ];
   return lines.map(foldLine).join('\r\n') + '\r\n';
+}
+
+export function buildIcs(event: IcsEvent, now: number = Date.now()): string {
+  return buildIcsCalendar([event], now);
 }

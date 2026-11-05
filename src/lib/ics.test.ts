@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildIcs, foldLine, icsDate, icsEscape } from './ics';
+import { buildIcs, buildIcsCalendar, foldLine, icsDate, icsEscape } from './ics';
 
 describe('ics', () => {
   const start = new Date(2026, 10, 5, 10, 30).getTime(); // 5/11/2026 10:30 ora italiana (CET, UTC+1)
@@ -53,5 +53,17 @@ describe('ics', () => {
     expect(enc.encode(parts[0]).length).toBeLessThanOrEqual(75);
     for (const p of parts.slice(1)) expect(enc.encode(' ' + p).length).toBeLessThanOrEqual(75);
     expect(parts.join('')).toBe(long);
+  });
+
+  it('più eventi nello stesso file (serie ricorrente)', () => {
+    const multi = buildIcsCalendar(
+      [0, 1, 2].map((i) => ({ uid: `u${i}@b`, start: start + i * 21 * 86400000, end: end + i * 21 * 86400000, summary: `Evento ${i}` })),
+      0,
+    );
+    expect(multi.match(/BEGIN:VCALENDAR/g)).toHaveLength(1);
+    expect(multi.match(/BEGIN:VEVENT/g)).toHaveLength(3);
+    expect(multi.match(/END:VEVENT/g)).toHaveLength(3);
+    expect(multi).toContain('UID:u2@b');
+    expect(multi.endsWith('END:VEVENT\r\nEND:VCALENDAR\r\n')).toBe(true);
   });
 });

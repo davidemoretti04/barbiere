@@ -67,7 +67,7 @@ Dopo la prima apertura l’app funziona anche **in modalità aereo**.
 ## 3. Backup: come non perdere mai i dati
 
 I dati vivono **solo sul telefono** (non c’è cloud). Se perdi o cambi il telefono, o cancelli l’app, i dati
-si perdono — **a meno che tu non abbia un backup**. L’app ti avvisa con un banner se l’ultimo backup ha più di 14 giorni.
+si perdono — **a meno che tu non abbia un backup**. L’app ti avvisa con un banner se l’ultimo backup ha più di 14 giorni; con la ✕ lo nascondi per 7 giorni.
 
 **Fare un backup** (consigliato ogni settimana):
 
@@ -111,7 +111,10 @@ Le schede in basso sono: **Home · Agenda · Clienti · Statistiche · Spese · 
   mancia e metodo di pagamento (facoltativi) → **Incassa**. Solo gli appuntamenti completati contano negli incassi.
 - **Promemoria**: dal dettaglio dell’appuntamento, **Promemoria** apre WhatsApp con il messaggio pronto
   (il testo si cambia in *Impostazioni*); c’è anche **SMS**.
-- **Calendario**: **Calendario** crea un evento che iPhone propone di aggiungere al Calendario.
+- **Calendario di iPhone**: nel nuovo appuntamento l’opzione **Aggiungi al Calendario** è già attiva: dopo il salvataggio iPhone
+  mostra l’evento (o tutta la serie ricorrente) e basta toccare **Aggiungi** / **Aggiungi tutti**, con avviso 30 minuti prima.
+  Si può spegnere per il singolo appuntamento. Dal dettaglio, il tasto **Calendario** lo riaggiunge in qualsiasi momento.
+- **Chiudere i fogli**: oltre a *Chiudi*, puoi trascinarli verso il basso. Nei moduli con dati l’app chiede prima conferma.
 - **Annullare un’azione**: dopo eliminazioni, incassi e annullamenti compare un avviso in basso con **Annulla**.
 - **Scorri a sinistra** sulle righe (settimana, clienti, listino, spese) per le azioni rapide.
 - **Clienti → Da ricontattare**: chi non viene da più di X settimane (soglia in *Impostazioni*), con tasto WhatsApp.
