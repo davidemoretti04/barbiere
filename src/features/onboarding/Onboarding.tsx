@@ -85,7 +85,7 @@ export function Onboarding() {
   // Primo avvio: gli esempi sono già caricati, si sceglie se configurare subito o provare prima
   if (sampleCount > 0) {
     return (
-      <div className="page" style={{ paddingBottom: 0 }}>
+      <div className="page onboarding-page" style={{ paddingBottom: 0 }}>
         <div className="onboarding">
           <img src={`${import.meta.env.BASE_URL}pwa-192.png`} alt="" className="hero-icon" />
           <div className="hero">
@@ -140,7 +140,7 @@ export function Onboarding() {
   const problem = hoursProblem(settings.workingHours);
 
   return (
-    <div className="page" ref={pageRef} style={{ paddingBottom: 0 }}>
+    <div className="page onboarding-page" ref={pageRef} style={{ paddingBottom: 0 }}>
       <div className="onboarding">
         <div className="steps" aria-label={`Passo ${step + 1} di 3`}>
           {[0, 1, 2].map((i) => (

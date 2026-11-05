@@ -607,7 +607,7 @@ html { touch-action: manipulation; }
 .sheet-open .navbar.solid {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  background: var(--bg);
+  background: var(--topbar);
 }
 /* il contenuto del foglio si ridisegna da solo, senza coinvolgere il velo a tutto schermo */
 .sheet-body { contain: content; }
@@ -622,3 +622,39 @@ html { touch-action: manipulation; }
 .switch input { inset: -8px -6px !important; width: auto; height: auto; }
 .switch-row > .switch-row-title { flex: 1 1 auto !important; min-width: 0 !important; }
 .switch-row > .switch { margin-left: auto; }
+
+/* ===== Barre piene: la striscia in alto (ora, batteria) resta bianca / nera =====
+   iOS colora la zona della barra di stato in base a ciò che scorre subito sotto: con una barra del titolo
+   trasparente prendeva il grigio della pagina o l'azzurro del banner. Le barre ora sono piene e opache. */
+:root { --topbar: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --topbar: #000000; } }
+.navbar,
+.navbar.collapsed,
+.navbar.solid {
+  background: var(--topbar) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 0.5px 0 var(--separator);
+}
+.tabbar {
+  background: var(--topbar) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+#statusbar-bg { background: var(--topbar) !important; }
+/* il titolo grande si appoggia sulla stessa fascia piena, così non c'è stacco sotto la barra */
+.large-title { background: var(--topbar); padding-top: 4px; padding-bottom: 10px; margin-bottom: 12px; box-shadow: 0 0.5px 0 var(--separator); }
+/* guida iniziale (senza barra del titolo): fascia piena fissa in cima mentre si scorre */
+.onboarding-page::before {
+  content: '';
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: calc(var(--safe-top) + 10px);
+  background: var(--topbar);
+}
+.onboarding-page .onboarding { padding-top: 14px; }
+/* data sotto il titolo grande (es. Home): nella stessa fascia */
+.large-title:has(+ .page-sub) { margin-bottom: 0; box-shadow: none; padding-bottom: 2px; }
+.large-title + .page-sub { background: var(--topbar); margin: 0 0 12px; padding: 0 16px 10px; box-shadow: 0 0.5px 0 var(--separator); }
