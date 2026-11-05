@@ -610,3 +610,12 @@ html { touch-action: manipulation; }
 .sheet-body { contain: content; }
 .sheet { will-change: transform; }
 .switch span, .switch span::after { will-change: transform; }
+
+/* ===== Interruttori: area di tocco ampia ===== */
+.switch-row { min-height: 50px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.switch-row:active { background: var(--cell-pressed); }
+.switch-row .switch-row-title { flex: 1; min-width: 0 !important; }
+/* anche fuori da una riga, l'interruttore risponde in un'area di almeno 44×44 punti */
+.switch input { inset: -8px -6px !important; width: auto; height: auto; }
+.switch-row > .switch-row-title { flex: 1 1 auto !important; min-width: 0 !important; }
+.switch-row > .switch { margin-left: auto; }

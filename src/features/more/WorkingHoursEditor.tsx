@@ -1,5 +1,5 @@
 import { IconPlus, IconX } from '../../components/Icons';
-import { Switch } from '../../components/ui';
+import { SwitchRow } from '../../components/ui';
 import { WEEKDAYS, type TimeRange, type Weekday, type WorkingHours } from '../../db/types';
 import { parseHM, WEEKDAY_NAMES } from '../../lib/schedule';
 
@@ -15,15 +15,13 @@ export function WorkingHoursEditor({ value, onChange }: { value: WorkingHours; o
         const open = ranges.length > 0;
         return (
           <div key={d} className="hours-day" style={{ position: 'relative', borderTop: d > 1 ? '0.5px solid var(--separator)' : undefined }}>
-            <div className="field" style={{ minHeight: 50 }}>
-              <span style={{ flex: 1 }}>{NAMES[d]}</span>
-              <span className="muted small">{open ? '' : 'Chiuso'}</span>
-              <Switch
-                label={`${NAMES[d]} aperto`}
-                checked={open}
-                onChange={(on) => set(d, on ? [{ start: '09:00', end: '13:00' }, { start: '15:00', end: '19:00' }] : [])}
-              />
-            </div>
+            <SwitchRow
+              title={NAMES[d]}
+              detail={open ? undefined : 'Chiuso'}
+              checked={open}
+              ariaLabel={`${NAMES[d]} aperto`}
+              onChange={(on) => set(d, on ? [{ start: '09:00', end: '13:00' }, { start: '15:00', end: '19:00' }] : [])}
+            />
             {ranges.map((r, i) => (
               <div key={i} className="range-row" style={{ paddingBottom: i === ranges.length - 1 ? 4 : 4 }}>
                 <input

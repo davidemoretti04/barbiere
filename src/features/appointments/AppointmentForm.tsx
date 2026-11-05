@@ -5,7 +5,7 @@ import { useAppointmentsBetween, useClientAppointments, useClients, useServices,
 import type { Appointment, AppointmentService } from '../../db/types';
 import { IconCalendarPlus, IconCheck, IconPlus, IconSearch, IconWarning } from '../../components/Icons';
 import { Sheet } from '../../components/Sheet';
-import { Field, Section, Switch } from '../../components/ui';
+import { Field, Section, SwitchRow } from '../../components/ui';
 import { addToCalendar } from './calendar';
 import { clientName, durationLabel, fmt, initials } from '../../lib/format';
 import { newId } from '../../lib/id';
@@ -437,11 +437,13 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
               : 'L’appuntamento resterà solo in questa app.'
           }
         >
-          <div className="field" style={{ minHeight: 50 }}>
-            <IconCalendarPlus width={22} height={22} style={{ color: 'var(--red)', flex: 'none' }} />
-            <span style={{ flex: 1 }}>Aggiungi al Calendario</span>
-            <Switch checked={toCalendar} onChange={setToCalendar} label="Aggiungi al Calendario di iPhone" />
-          </div>
+          <SwitchRow
+            icon={<IconCalendarPlus width={22} height={22} style={{ color: 'var(--red)', flex: 'none' }} />}
+            title="Aggiungi al Calendario"
+            checked={toCalendar}
+            onChange={setToCalendar}
+            ariaLabel="Aggiungi al Calendario di iPhone"
+          />
         </Section>
       )}
 

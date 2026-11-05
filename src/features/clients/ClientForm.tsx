@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createClient, saveClient } from '../../db/actions';
 import type { Client } from '../../db/types';
 import { Sheet } from '../../components/Sheet';
-import { Field, Section, Switch } from '../../components/ui';
+import { Field, Section, SwitchRow } from '../../components/ui';
 import { normalizePhone } from '../../lib/phone';
 import { REPEAT_WEEKS_OPTIONS, repeatLabel } from '../../lib/recurrence';
 import { useAppointmentUI } from '../appointments/context';
@@ -81,10 +81,7 @@ export function ClientForm({
               : 'Attiva per fissare subito i suoi appuntamenti ricorrenti.'
           }
         >
-          <div className="field" style={{ minHeight: 50 }}>
-            <span style={{ flex: 1 }}>Appuntamenti ricorrenti</span>
-            <Switch checked={recurring} onChange={setRecurring} label="Imposta appuntamenti ricorrenti" />
-          </div>
+          <SwitchRow title="Appuntamenti ricorrenti" checked={recurring} onChange={setRecurring} ariaLabel="Imposta appuntamenti ricorrenti" />
           {recurring && (
             <div className="field" style={{ minHeight: 52, paddingTop: 8, paddingBottom: 8 }}>
               <div className="chips" role="group" aria-label="Ogni quante settimane">

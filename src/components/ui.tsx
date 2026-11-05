@@ -175,6 +175,38 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
   );
 }
 
+/**
+ * Riga con interruttore in stile Impostazioni di iPhone: si tocca tutta la riga (scritta compresa),
+ * non solo il piccolo interruttore.
+ */
+export function SwitchRow({
+  title,
+  detail,
+  icon,
+  checked,
+  onChange,
+  ariaLabel,
+}: {
+  title: ReactNode;
+  detail?: ReactNode;
+  icon?: ReactNode;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  ariaLabel?: string;
+}) {
+  return (
+    <label className="field switch-row">
+      {icon}
+      <span className="switch-row-title">{title}</span>
+      {detail !== undefined && <span className="muted small">{detail}</span>}
+      <span className="switch">
+        <input type="checkbox" role="switch" checked={checked} aria-label={ariaLabel} onChange={(e) => onChange(e.target.checked)} />
+        <span />
+      </span>
+    </label>
+  );
+}
+
 export function EmptyState({
   icon,
   title,
