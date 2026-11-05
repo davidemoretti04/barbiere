@@ -127,6 +127,11 @@ function ExpenseForm({
   const [amount, setAmount] = useState(expense ? centsToInput(expense.amountCents) : '');
   const [notes, setNotes] = useState(expense?.notes ?? '');
   const [error, setError] = useState('');
+  const dirty =
+    date !== (expense?.date ?? defaultDate) ||
+    category !== (expense?.category ?? 'Prodotti') ||
+    amount !== (expense ? centsToInput(expense.amountCents) : '') ||
+    notes !== (expense?.notes ?? '');
 
   async function save() {
     const cents = parseEuro(amount);
@@ -140,16 +145,18 @@ function ExpenseForm({
     <Sheet
       title={expense ? 'Modifica spesa' : 'Nuova spesa'}
       onClose={onClose}
-      dismissable={false}
+      dismissable={!dirty}
       left={
         <button type="button" className="nav-btn" onClick={onClose}>
-          Annulla
+          {dirty ? 'Annulla' : 'Chiudi'}
         </button>
       }
       right={
-        <button type="button" className="nav-btn bold" onClick={save}>
-          Salva
-        </button>
+        expense && !dirty ? undefined : (
+          <button type="button" className="nav-btn bold" onClick={save}>
+            Salva
+          </button>
+        )
       }
     >
       <Section>

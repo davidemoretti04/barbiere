@@ -13,6 +13,10 @@ export function ServiceForm({ service, onClose, onSaved }: { service?: Service; 
   const [price, setPrice] = useState(service ? centsToInput(service.priceCents) : '');
   const [duration, setDuration] = useState(String(service?.durationMinutes ?? 30));
   const [error, setError] = useState('');
+  const dirty =
+    name !== (service?.name ?? '') ||
+    price !== (service ? centsToInput(service.priceCents) : '') ||
+    duration !== String(service?.durationMinutes ?? 30);
 
   async function save() {
     const cents = parseEuro(price);
@@ -29,16 +33,18 @@ export function ServiceForm({ service, onClose, onSaved }: { service?: Service; 
     <Sheet
       title={service ? 'Modifica servizio' : 'Nuovo servizio'}
       onClose={onClose}
-      dismissable={false}
+      dismissable={!dirty}
       left={
         <button type="button" className="nav-btn" onClick={onClose}>
-          Annulla
+          {dirty ? 'Annulla' : 'Chiudi'}
         </button>
       }
       right={
-        <button type="button" className="nav-btn bold" onClick={save}>
-          Salva
-        </button>
+        service && !dirty ? undefined : (
+          <button type="button" className="nav-btn bold" onClick={save}>
+            Salva
+          </button>
+        )
       }
     >
       <Section footer={service ? 'Le modifiche valgono per i nuovi appuntamenti: lo storico mantiene i prezzi di allora.' : undefined}>

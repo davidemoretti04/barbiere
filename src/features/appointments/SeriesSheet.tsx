@@ -66,6 +66,26 @@ function SeriesEditor({
   const [price, setPrice] = useState(centsToInput(next.amountCents));
   const [notes, setNotes] = useState(next.notes);
   const [error, setError] = useState('');
+  // valori di partenza: «Salva» e la conferma di chiusura compaiono solo se qualcosa cambia
+  const [initial] = useState(() => ({
+    date: toDateKey(new Date(next.start)),
+    time: fmt(next.start, 'HH:mm'),
+    weeks: next.repeatWeeks ?? 1,
+    count: (wasForever ? 'sempre' : Math.max(1, future.length)) as number | 'sempre',
+    services: next.services.map((s) => s.serviceId).join(','),
+    duration: String(Math.round((next.end - next.start) / 60000)),
+    price: centsToInput(next.amountCents),
+    notes: next.notes,
+  }));
+  const dirty =
+    date !== initial.date ||
+    time !== initial.time ||
+    weeks !== initial.weeks ||
+    count !== initial.count ||
+    selected.map((s) => s.serviceId).join(',') !== initial.services ||
+    duration !== initial.duration ||
+    price !== initial.price ||
+    notes !== initial.notes;
 
   const countOptions = useMemo(() => {
     const opts = [...REPEAT_COUNT_OPTIONS];
@@ -119,16 +139,18 @@ function SeriesEditor({
       title="Modifica ricorrenza"
       onClose={onClose}
       tall
-      dismissable={false}
+      dismissable={!dirty}
       left={
         <button type="button" className="nav-btn" onClick={onClose}>
-          Annulla
+          {dirty ? 'Annulla' : 'Chiudi'}
         </button>
       }
       right={
-        <button type="button" className="nav-btn bold" onClick={() => void save()} disabled={!valid}>
-          Salva
-        </button>
+        dirty ? (
+          <button type="button" className="nav-btn bold" onClick={() => void save()} disabled={!valid}>
+            Salva
+          </button>
+        ) : undefined
       }
     >
       <div className="hero">
@@ -242,9 +264,11 @@ function SeriesEditor({
       )}
 
       <div className="sheet-pad" style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
-        <button type="button" className="btn" onClick={() => void save()} disabled={!valid}>
-          Salva modifiche
-        </button>
+        {dirty && (
+          <button type="button" className="btn" onClick={() => void save()} disabled={!valid}>
+            Salva modifiche
+          </button>
+        )}
         <button type="button" className="btn tinted" onClick={() => addToCalendar(future, client)} disabled={!future.length}>
           <IconCalendarPlus /> Aggiungi la serie al Calendario
         </button>

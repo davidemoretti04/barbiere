@@ -54,7 +54,28 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
   const [repeatCount, setRepeatCount] = useState(6);
   const [toCalendar, setToCalendar] = useState(true);
   const [error, setError] = useState('');
+  // valori di partenza per capire se è stato cambiato qualcosa
+  const [initial] = useState(() => ({
+    clientId: editing?.clientId ?? prefill?.clientId ?? null,
+    services: (editing?.services ?? []).map((x) => x.serviceId).join(','),
+    date: toDateKey(new Date(initialStart)),
+    time: fmt(initialStart, 'HH:mm'),
+    notes: editing?.notes ?? '',
+    repeatWeeks: editing ? 0 : (prefill?.repeatWeeks ?? 0),
+  }));
   const [saving, setSaving] = useState(false);
+  const dirty =
+    clientId !== initial.clientId ||
+    newClient !== null ||
+    selected.map((x) => x.serviceId).join(',') !== initial.services ||
+    date !== initial.date ||
+    time !== initial.time ||
+    notes !== initial.notes ||
+    durOverride !== (editing && editingDur !== sumDur(editing.services) ? String(editingDur) : null) ||
+    priceOverride !== (editing && editing.amountCents !== sumPrice(editing.services) ? centsToInput(editing.amountCents) : null) ||
+    repeatWeeks !== initial.repeatWeeks ||
+    repeatCount !== 6 ||
+    toCalendar !== true;
 
   const defaultDur = settings?.defaultDurationMinutes ?? 30;
   const computedDur = selected.length ? sumDur(selected) : defaultDur;
@@ -198,16 +219,18 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
       title={editing ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
       onClose={onClose}
       tall
-      dismissable={false}
+      dismissable={!dirty}
       left={
         <button type="button" className="nav-btn" onClick={onClose}>
-          Annulla
+          {dirty ? 'Annulla' : 'Chiudi'}
         </button>
       }
       right={
-        <button type="button" className="nav-btn bold" onClick={save} disabled={saving}>
-          {editing ? 'Salva' : 'Aggiungi'}
-        </button>
+        editing && !dirty ? undefined : (
+          <button type="button" className="nav-btn bold" onClick={save} disabled={saving}>
+            {editing ? 'Salva' : 'Aggiungi'}
+          </button>
+        )
       }
     >
       {/* ----- Cliente ----- */}
@@ -505,11 +528,13 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
           <div>{error}</div>
         </div>
       )}
-      <div className="sheet-pad">
-        <button type="button" className="btn" onClick={save} disabled={saving}>
-          {editing ? 'Salva modifiche' : 'Aggiungi appuntamento'}
-        </button>
-      </div>
+      {(!editing || dirty) && (
+        <div className="sheet-pad">
+          <button type="button" className="btn" onClick={save} disabled={saving}>
+            {editing ? 'Salva modifiche' : 'Aggiungi appuntamento'}
+          </button>
+        </div>
+      )}
     </Sheet>
   );
 }

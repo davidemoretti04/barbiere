@@ -30,6 +30,11 @@ export function ClientForm({
   const [phone, setPhone] = useState(client?.phone ?? '');
   const [notes, setNotes] = useState(client?.notes ?? '');
   const [error, setError] = useState('');
+  const dirty =
+    first !== (client?.firstName ?? '') ||
+    last !== (client?.lastName ?? '') ||
+    phone !== (client?.phone ?? '') ||
+    notes !== (client?.notes ?? '');
   const [recurring, setRecurring] = useState(defaultRecurring);
   const [weeks, setWeeks] = useState(3);
   const ui = useAppointmentUI();
@@ -72,16 +77,18 @@ export function ClientForm({
       title={client ? 'Modifica cliente' : 'Nuovo cliente'}
       onClose={onClose}
       tall
-      dismissable={false}
+      dismissable={!dirty}
       left={
         <button type="button" className="nav-btn" onClick={onClose}>
-          Annulla
+          {dirty ? 'Annulla' : 'Chiudi'}
         </button>
       }
       right={
-        <button type="button" className="nav-btn bold" onClick={save} disabled={!first.trim() || !!duplicate || saving}>
-          {client ? 'Salva' : recurring ? 'Avanti' : 'Aggiungi'}
-        </button>
+        client && !dirty ? undefined : (
+          <button type="button" className="nav-btn bold" onClick={save} disabled={!first.trim() || !!duplicate || saving}>
+            {client ? 'Salva' : recurring ? 'Avanti' : 'Aggiungi'}
+          </button>
+        )
       }
     >
       <Section>
