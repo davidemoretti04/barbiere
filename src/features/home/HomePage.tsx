@@ -4,7 +4,8 @@ import { BackupBanner } from '../../components/BackupBanner';
 import { useFeedback } from '../../components/feedback-context';
 import { IconCalendar, IconCalendarPlus, IconChat, IconCheck, IconUserPlus } from '../../components/Icons';
 import { Page, Row, Section } from '../../components/ui';
-import { useAllAppointments, useClients, useSettings } from '../../db/hooks';
+import { useAllAppointments, useClients, useExpenses, useSettings } from '../../db/hooks';
+import { StatDetailSheet } from '../stats/StatDetailSheet';
 import type { Appointment, Client } from '../../db/types';
 import { useNow } from '../../hooks/useNow';
 import { capitalize, clientName, fmt, reminderText, servicesLabel } from '../../lib/format';
@@ -26,9 +27,12 @@ export function HomePage() {
   const ui = useAppointmentUI();
   const { toast } = useFeedback();
   const [newClient, setNewClient] = useState(false);
+  const expenses = useExpenses();
+  const [detail, setDetail] = useState<'week' | 'month' | null>(null);
 
   const byId = useMemo(() => new Map((clients ?? []).map((c) => [c.id, c])), [clients]);
-  const today = startOfDay(new Date(now));
+  const todayMs = startOfDay(new Date(now)).getTime();
+  const today = new Date(todayMs);
 
   const data = useMemo(() => {
     if (!appts || !clients || !settings) return null;
@@ -39,12 +43,15 @@ export function HomePage() {
     const prevWeek: DateRange = { start: addDays(new Date(week.start), -7).getTime(), end: addDays(new Date(now), -7).getTime() };
     const prevMonth: DateRange = { start: addMonths(new Date(month.start), -1).getTime(), end: addMonths(new Date(now), -1).getTime() };
     const k = (r: DateRange) => computeKpis(appts, [], clients, r);
-    const pending = pendingCheckout(appts, now).filter((a) => a.start >= addDays(today, -14).getTime());
+    const dayStart = startOfDay(new Date(now));
+    const pending = pendingCheckout(appts, now).filter((a) => a.start >= addDays(dayStart, -14).getTime());
     return {
-      today: dayTotals(appts, today),
-      remainingToday: appts.filter((a) => a.status === 'programmato' && isSameDay(a.start, today) && a.end > now).length,
+      today: dayTotals(appts, dayStart),
+      remainingToday: appts.filter((a) => a.status === 'programmato' && isSameDay(a.start, dayStart) && a.end > now).length,
       upcoming: upcomingAppointments(appts, now, 6),
       pending,
+      weekRange: toNow(week),
+      monthRange: toNow(month),
       week: k(toNow(week)),
       prevWeek: k(prevWeek),
       month: k(toNow(month)),
@@ -52,7 +59,7 @@ export function HomePage() {
       last7: dailyCollected(appts, 7, now),
       inactive: inactiveClients(clients, appts, settings.inactiveWeeks, now).length,
     };
-  }, [appts, clients, settings, now, today]);
+  }, [appts, clients, settings, now]);
 
   if (!data || !settings) return <Page title="Home">{null}</Page>;
 
@@ -180,8 +187,22 @@ export function HomePage() {
       {/* ----- Incassi ----- */}
       <Section header="Incassi" group={false} footer="Confronto con lo stesso numero di giorni del periodo precedente. Mance escluse.">
         <div className="kpis" style={{ margin: '0 0 10px' }}>
-          <MoneyKpi label="Questa settimana" cur={data.week.revenueCents} prev={data.prevWeek.revenueCents} prevLabel="sett. scorsa" count={data.week.completedCount} />
-          <MoneyKpi label="Questo mese" cur={data.month.revenueCents} prev={data.prevMonth.revenueCents} prevLabel="mese scorso" count={data.month.completedCount} />
+          <MoneyKpi
+            label="Questa settimana"
+            cur={data.week.revenueCents}
+            prev={data.prevWeek.revenueCents}
+            prevLabel="sett. scorsa"
+            count={data.week.completedCount}
+            onClick={() => setDetail('week')}
+          />
+          <MoneyKpi
+            label="Questo mese"
+            cur={data.month.revenueCents}
+            prev={data.prevMonth.revenueCents}
+            prevLabel="mese scorso"
+            count={data.month.completedCount}
+            onClick={() => setDetail('month')}
+          />
         </div>
         <button type="button" className="card" style={{ margin: 0, width: '100%', textAlign: 'left', display: 'block' }} onClick={() => navigate('/statistiche')}>
           <div className="card-label">
@@ -217,6 +238,18 @@ export function HomePage() {
             />
           )}
         </Section>
+      )}
+
+      {detail && appts && clients && expenses && (
+        <StatDetailSheet
+          target={{ kind: 'revenue' }}
+          range={detail === 'week' ? data.weekRange : data.monthRange}
+          rangeLabel={detail === 'week' ? `Questa settimana, fino a oggi` : `${capitalize(fmt(now, 'MMMM yyyy'))}, fino a oggi`}
+          appts={appts}
+          clients={clients}
+          expenses={expenses}
+          onClose={() => setDetail(null)}
+        />
       )}
 
       {newClient && (
@@ -268,7 +301,21 @@ function NextCard({ a, now, client, template }: { a: Appointment; now: number; c
   );
 }
 
-function MoneyKpi({ label, cur, prev, prevLabel, count }: { label: string; cur: number; prev: number; prevLabel: string; count: number }) {
+function MoneyKpi({
+  label,
+  cur,
+  prev,
+  prevLabel,
+  count,
+  onClick,
+}: {
+  label: string;
+  cur: number;
+  prev: number;
+  prevLabel: string;
+  count: number;
+  onClick: () => void;
+}) {
   const pct = percentChange(cur, prev);
   let cls = 'flat';
   let text = `= ${prevLabel}`;
@@ -278,11 +325,13 @@ function MoneyKpi({ label, cur, prev, prevLabel, count }: { label: string; cur: 
     text = `${pct > 0 ? '▲' : '▼'} ${Math.abs(Math.round(pct))}% vs ${prevLabel}`;
   }
   return (
-    <div className="kpi">
-      <div className="k-label">{label}</div>
+    <button type="button" className="kpi" onClick={onClick} aria-label={`${label}: ${formatEuro(cur)}. Vedi dettaglio`}>
+      <div className="k-label">
+        {label} <span aria-hidden="true" style={{ color: 'var(--label-3)', float: 'right' }}>›</span>
+      </div>
       <div className="k-value">{formatEuro(cur)}</div>
       <div className="small muted">{count} completati</div>
       <div className={`k-delta ${cls}`}>{text}</div>
-    </div>
+    </button>
   );
 }
