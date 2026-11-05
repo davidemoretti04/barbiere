@@ -134,15 +134,18 @@ export function AppointmentDetail({
         </p>
       </div>
 
-      {a.status === 'programmato' && (
-        <div className="sheet-pad" style={{ marginBottom: 16 }}>
+      <div className="sheet-pad" style={{ marginBottom: 16, display: 'grid', gap: 10 }}>
+        {a.status === 'programmato' && (
           <button type="button" className="btn green" onClick={onCheckout}>
             <IconCheck /> Segna come completato
           </button>
-        </div>
-      )}
+        )}
+        <button type="button" className="btn tinted" onClick={() => addToCalendar(a, client)}>
+          <IconCalendarPlus /> Aggiungi al Calendario
+        </button>
+      </div>
 
-      <div className="actions-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <div className="actions-grid">
         {wa ? (
           <a className="action-tile" href={wa} target="_blank" rel="noopener noreferrer">
             <IconChat /> Promemoria
@@ -170,9 +173,6 @@ export function AppointmentDetail({
             <IconPhone /> Chiama
           </button>
         )}
-        <button type="button" className="action-tile" onClick={() => addToCalendar(a, client)}>
-          <IconCalendarPlus /> Calendario
-        </button>
       </div>
 
       <Section header="Servizi" footer={`Durata ${durationLabel(minutes)}`}>

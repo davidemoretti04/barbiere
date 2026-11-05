@@ -15,7 +15,7 @@ export function CheckoutSheet({ appointment, onClose, onDone }: { appointment: A
   const listPrice = appointment.services.reduce((s, x) => s + x.priceCents, 0);
   const [amount, setAmount] = useState(centsToInput(appointment.amountCents || listPrice));
   const [tip, setTip] = useState(appointment.tipCents ? centsToInput(appointment.tipCents) : '');
-  const [method, setMethod] = useState<PaymentMethod | ''>(appointment.paymentMethod ?? '');
+  const [method, setMethod] = useState<PaymentMethod | ''>(appointment.paymentMethod ?? 'contanti');
   const [error, setError] = useState('');
 
   const amountCents = parseEuro(amount);
