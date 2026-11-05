@@ -2,15 +2,33 @@ import { db } from './db';
 import type { Appointment, Client, Expense, Service } from './types';
 import { newId } from '../lib/id';
 import { extendOpenSeries } from '../lib/recurrence';
+import { findDuplicateClient } from '../lib/search';
 
-export async function createClient(data: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
-  const c: Client = { ...data, id: newId(), createdAt: Date.now() };
-  await db.clients.add(c);
-  return c;
+/** Esiste già un cliente con stesso nome, cognome e telefono. */
+export class DuplicateClientError extends Error {
+  constructor(public existing: Client) {
+    super('Cliente già presente');
+  }
 }
 
+/** Crea un cliente; se ne esiste già uno identico lancia DuplicateClientError (anche con doppio tocco su «Aggiungi»). */
+export async function createClient(data: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
+  return db.transaction('rw', db.clients, async () => {
+    const existing = findDuplicateClient(await db.clients.toArray(), data);
+    if (existing) throw new DuplicateClientError(existing);
+    const c: Client = { ...data, id: newId(), createdAt: Date.now() };
+    await db.clients.add(c);
+    return c;
+  });
+}
+
+/** Salva le modifiche; se diventerebbe identico a un altro cliente lancia DuplicateClientError. */
 export async function saveClient(c: Client): Promise<void> {
-  await db.clients.put({ ...c });
+  await db.transaction('rw', db.clients, async () => {
+    const existing = findDuplicateClient(await db.clients.toArray(), c, c.id);
+    if (existing) throw new DuplicateClientError(existing);
+    await db.clients.put({ ...c });
+  });
 }
 
 /** Elimina un cliente e i suoi appuntamenti; ritorna una funzione per annullare. */

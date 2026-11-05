@@ -105,6 +105,9 @@ Le schede in basso sono: **Home · Agenda · Clienti · Statistiche · Spese · 
   Scrivi il nome del cliente: se non esiste tocca **Nuovo cliente «…»** e aggiungi il telefono. Tocca i servizi
   (durata e prezzo si calcolano da soli e si possono modificare) → **Aggiungi**.
   Se l’orario si sovrappone a un altro o è fuori orario compare un avviso, ma puoi salvare comunque.
+- **Clienti doppi**: non si possono avere due clienti con stesso nome, cognome e telefono (contano anche maiuscole, accenti e
+  modi diversi di scrivere il numero, es. `+39 333…` = `333…`). L’app avvisa e propone di aprire o usare il cliente già presente.
+  Stesso nome con telefono diverso è permesso.
 - **Nuovo cliente abituale**: nel modulo del nuovo cliente attiva **Appuntamenti ricorrenti** e scegli ogni quante settimane:
   dopo il salvataggio si apre il primo appuntamento con *Ripeti* già impostato.
 - **Appuntamenti ricorrenti** (clienti abituali): nel nuovo appuntamento scegli **Ripeti** (ogni 1–8 settimane) e **Quante volte**

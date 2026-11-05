@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { createClient, saveClient } from '../../db/actions';
+import { createClient, DuplicateClientError, saveClient } from '../../db/actions';
+import { useClients } from '../../db/hooks';
+import { findDuplicateClient } from '../../lib/search';
+import { clientName } from '../../lib/format';
+import { formatPhone } from '../../lib/phone';
+import { navigate } from '../../router';
+import { IconWarning } from '../../components/Icons';
 import type { Client } from '../../db/types';
 import { Sheet } from '../../components/Sheet';
 import { Field, Section, SwitchRow } from '../../components/ui';
@@ -27,10 +33,26 @@ export function ClientForm({
   const [recurring, setRecurring] = useState(defaultRecurring);
   const [weeks, setWeeks] = useState(3);
   const ui = useAppointmentUI();
+  const clients = useClients();
+  const [saving, setSaving] = useState(false);
+  const duplicate = clients ? findDuplicateClient(clients, { firstName: first, lastName: last, phone }, client?.id) : undefined;
 
   async function save() {
+    if (saving) return; // niente doppi salvataggi con il doppio tocco
     if (!first.trim()) return setError('Scrivi almeno il nome.');
     if (phone.trim() && !normalizePhone(phone)) return setError('Il numero di telefono non sembra valido.');
+    if (duplicate) return setError('Questo cliente esiste già: aprilo invece di crearne un altro.');
+    setSaving(true);
+    try {
+      await doSave();
+    } catch (e) {
+      setSaving(false);
+      if (e instanceof DuplicateClientError) setError(`Esiste già «${clientName(e.existing)}» con questi dati.`);
+      else setError('Non è stato possibile salvare. Riprova.');
+    }
+  }
+
+  async function doSave() {
     const data = { firstName: first.trim(), lastName: last.trim(), phone: phone.trim(), notes: notes.trim() };
     if (client) {
       const c = { ...client, ...data };
@@ -56,7 +78,7 @@ export function ClientForm({
         </button>
       }
       right={
-        <button type="button" className="nav-btn bold" onClick={save} disabled={!first.trim()}>
+        <button type="button" className="nav-btn bold" onClick={save} disabled={!first.trim() || !!duplicate || saving}>
           {client ? 'Salva' : recurring ? 'Avanti' : 'Aggiungi'}
         </button>
       }
@@ -72,6 +94,26 @@ export function ClientForm({
           <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="333 123 4567" autoComplete="off" />
         </Field>
       </Section>
+      {duplicate && (
+        <div className="warn" role="alert">
+          <IconWarning />
+          <div style={{ flex: 1 }}>
+            <b>Cliente già presente.</b> Esiste già «{clientName(duplicate)}»{duplicate.phone ? ` (${formatPhone(duplicate.phone)})` : ' senza telefono'}.
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn small tinted"
+                onClick={() => {
+                  onClose();
+                  navigate(`/clienti/${duplicate.id}`);
+                }}
+              >
+                Apri il cliente esistente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {!client && (
         <Section
           header="Cliente abituale"

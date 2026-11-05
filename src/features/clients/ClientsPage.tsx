@@ -92,8 +92,8 @@ export function ClientsPage() {
         onChange={setTab}
         options={[
           { value: 'tutti', label: 'Tutti' },
-          { value: 'ricontattare', label: `Da ricontattare${inactive.length ? ` (${inactive.length})` : ''}` },
           { value: 'ricorrenti', label: `Ricorrenti${recurring.length ? ` (${recurring.length})` : ''}` },
+          { value: 'ricontattare', label: `Da ricontattare${inactive.length ? ` (${inactive.length})` : ''}` },
         ]}
       />
 

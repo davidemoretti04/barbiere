@@ -1,6 +1,7 @@
 import { addDays, addWeeks } from 'date-fns';
 import { useMemo, useState } from 'react';
-import { createClient, saveAppointment, saveAppointments } from '../../db/actions';
+import { createClient, DuplicateClientError, saveAppointment, saveAppointments } from '../../db/actions';
+import { findDuplicateClient } from '../../lib/search';
 import { useAppointmentsBetween, useClientAppointments, useClients, useServices, useSettings } from '../../db/hooks';
 import type { Appointment, AppointmentService } from '../../db/types';
 import { IconCalendarPlus, IconCheck, IconPlus, IconSearch, IconWarning } from '../../components/Icons';
@@ -77,6 +78,10 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
   const suggested = clientId && clientHistory ? suggestedRepeatWeeks(clientStats(clientHistory, clientId).averageGapDays) : null;
 
   const client = clients?.find((c) => c.id === clientId);
+  const newDuplicate =
+    newClient && clients
+      ? findDuplicateClient(clients, { firstName: newClient.first, lastName: newClient.last, phone: newClient.phone })
+      : undefined;
   const activeServices = useMemo(
     () => (services ?? []).filter((s) => s.active).sort((a, b) => a.name.localeCompare(b.name, 'it')),
     [services],
@@ -143,14 +148,21 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
     setSaving(true);
     try {
       let cid = clientId;
-      if (newClient) {
-        const c = await createClient({
-          firstName: newClient.first.trim(),
-          lastName: newClient.last.trim(),
-          phone: newClient.phone.trim(),
-          notes: '',
-        });
-        cid = c.id;
+      if (newClient && newDuplicate) {
+        cid = newDuplicate.id; // cliente già presente: si usa quello, senza crearne un doppione
+      } else if (newClient) {
+        try {
+          const c = await createClient({
+            firstName: newClient.first.trim(),
+            lastName: newClient.last.trim(),
+            phone: newClient.phone.trim(),
+            notes: '',
+          });
+          cid = c.id;
+        } catch (e) {
+          if (e instanceof DuplicateClientError) cid = e.existing.id;
+          else throw e;
+        }
       }
       const appt: Appointment = {
         id: editing?.id ?? newId(),
@@ -295,6 +307,27 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
             <span className="row-main">{query.trim() ? `Nuovo cliente «${query.trim()}»` : 'Nuovo cliente'}</span>
           </button>
         </Section>
+      )}
+
+      {newClient && newDuplicate && (
+        <div className="warn" role="alert">
+          <IconWarning />
+          <div style={{ flex: 1 }}>
+            <b>Cliente già presente:</b> «{clientName(newDuplicate)}»{newDuplicate.phone ? ` (${formatPhone(newDuplicate.phone)})` : ''}. L’appuntamento verrà assegnato a lui.
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn small tinted"
+                onClick={() => {
+                  setClientId(newDuplicate.id);
+                  setNewClient(null);
+                }}
+              >
+                Usa il cliente esistente
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ----- Servizi ----- */}
