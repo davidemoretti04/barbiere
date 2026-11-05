@@ -49,14 +49,17 @@ describe('sovrapposizioni', () => {
 });
 
 describe('orario di lavoro', () => {
-  const s = DEFAULT_SETTINGS; // mar–ven 9–13 / 15–19:30, sab 9–18, lun e dom chiuso
+  const s = DEFAULT_SETTINGS; // lun–ven 9–13 / 15–19:30, sab 9–18, dom chiuso
   it('dentro e fuori fascia', () => {
     // 5/11/2026 è un giovedì
     expect(isWithinWorkingHours(at(9), at(9, 30), s)).toBe(true);
     expect(isWithinWorkingHours(at(12, 45), at(13, 15), s)).toBe(false); // sconfina nella pausa
     expect(isWithinWorkingHours(at(14), at(14, 30), s)).toBe(false);
     expect(isWithinWorkingHours(at(19), at(19, 30), s)).toBe(true);
-    expect(isWithinWorkingHours(at(10, 0, 9), at(10, 30, 9), s)).toBe(false); // lunedì chiuso
+    expect(isWithinWorkingHours(at(10, 0, 9), at(10, 30, 9), s)).toBe(true); // lunedì aperto di default
+    expect(isWithinWorkingHours(at(10, 0, 8), at(10, 30, 8), s)).toBe(false); // domenica chiuso
+    const closedMonday = { ...s, workingHours: { ...s.workingHours, 1: [] } };
+    expect(isWithinWorkingHours(at(10, 0, 9), at(10, 30, 9), closedMonday)).toBe(false);
   });
   it('ferie', () => {
     const withClosure = { ...s, closures: [{ id: 'x', from: '2026-11-04', to: '2026-11-06', label: 'Ferie' }] };

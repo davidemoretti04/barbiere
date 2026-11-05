@@ -100,7 +100,10 @@ export const DEFAULT_SETTINGS: Settings = {
   id: 'app',
   onboarded: false,
   workingHours: {
-    1: [],
+    1: [
+      { start: '09:00', end: '13:00' },
+      { start: '15:00', end: '19:30' },
+    ],
     2: [
       { start: '09:00', end: '13:00' },
       { start: '15:00', end: '19:30' },

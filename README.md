@@ -212,7 +212,7 @@ dal manifest (`start_url`, `scope`) e dal service worker. Il routing usa l’has
 - *Da ricontattare* = clienti con almeno una visita, ultima visita oltre la soglia e nessun appuntamento futuro.
 - La *vista Settimana* è un elenco per giorno (più leggibile su iPhone di una griglia a 7 colonne);
   la striscia dei giorni porta alla vista Giorno.
-- Orari predefiniti: mar–ven 9:00–13:00 e 15:00–19:30, sabato 9:00–18:00, lunedì e domenica chiuso (modificabili).
+- Orari predefiniti: lun–ven 9:00–13:00 e 15:00–19:30, sabato 9:00–18:00, domenica chiuso (modificabili nella configurazione).
 - Eliminare un cliente elimina anche i suoi appuntamenti (con conferma e “Annulla”).
 - I numeri senza prefisso ricevono +39.
 
