@@ -1,0 +1,10 @@
+node_modules
+dist
+dev-dist
+*.local
+.DS_Store
+# Non salvare mai backup o export con dati reali nel repository
+*.ics
+backup-*.json
+*.csv
+.claude
