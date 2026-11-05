@@ -568,3 +568,6 @@ button.row:active, a.row:active, .row.pressable:active { background: var(--cell-
 button.kpi { text-align: left; display: block; width: 100%; font: inherit; color: inherit; }
 button.kpi:active { background: var(--cell-pressed); }
 .tabbar a { min-width: 0; white-space: nowrap; }
+
+.sheet-header, .sheet-grabber { touch-action: none; cursor: grab; }
+.sheet-grabber { box-sizing: content-box; padding: 0 30px; background-clip: content-box; }
