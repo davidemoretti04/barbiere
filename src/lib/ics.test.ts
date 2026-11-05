@@ -55,6 +55,17 @@ describe('ics', () => {
     expect(parts.join('')).toBe(long);
   });
 
+  it('serie «Sempre»: un evento con ripetizione senza fine in ora italiana', () => {
+    const rec = buildIcs({ uid: 'r@b', start, end, summary: 'Taglio', repeatWeeks: 3 }, 0);
+    expect(rec).toContain('BEGIN:VTIMEZONE\r\nTZID:Europe/Rome');
+    expect(rec).toContain('DTSTART;TZID=Europe/Rome:20261105T103000');
+    expect(rec).toContain('DTEND;TZID=Europe/Rome:20261105T111500');
+    expect(rec).toContain('RRULE:FREQ=WEEKLY;INTERVAL=3');
+    expect(rec).not.toContain('COUNT=');
+    expect(rec).not.toContain('UNTIL=');
+    expect(rec.match(/BEGIN:VEVENT/g)).toHaveLength(1);
+  });
+
   it('più eventi nello stesso file (serie ricorrente)', () => {
     const multi = buildIcsCalendar(
       [0, 1, 2].map((i) => ({ uid: `u${i}@b`, start: start + i * 21 * 86400000, end: end + i * 21 * 86400000, summary: `Evento ${i}` })),

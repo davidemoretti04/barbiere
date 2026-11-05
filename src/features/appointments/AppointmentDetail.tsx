@@ -1,6 +1,8 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { deleteAppointment, deleteMany, setAppointmentStatus, setStatusMany } from '../../db/actions';
+import { setAppointmentStatus } from '../../db/actions';
+import { useAppointmentActions } from './useAppointmentActions';
+import { useAppointmentUI } from './context';
 import { repeatLabel, seriesFrom } from '../../lib/recurrence';
 import { useAppointment, useClient, useSettings } from '../../db/hooks';
 import { useFeedback } from '../../components/feedback-context';
@@ -28,7 +30,9 @@ export function AppointmentDetail({
   const a = useAppointment(id);
   const client = useClient(a?.clientId) ?? undefined;
   const settings = useSettings();
-  const { confirm, choose, toast } = useFeedback();
+  const { toast } = useFeedback();
+  const actions = useAppointmentActions();
+  const ui = useAppointmentUI();
   const seriesId = a?.seriesId;
   const seriesAll = useLiveQuery(() => (seriesId ? db.appointments.where('seriesId').equals(seriesId).toArray() : []), [seriesId]);
 
@@ -50,58 +54,9 @@ export function AppointmentDetail({
   const following = a.seriesId && seriesAll ? seriesFrom(seriesAll, a) : [a];
   const futureCount = following.length - 1;
 
-  /** Per le serie chiede se agire solo su questo o anche sui successivi. null = annullato dall'utente. */
-  async function scope(action: string, destructive: boolean): Promise<'one' | 'following' | null> {
-    if (!a || !a.seriesId || futureCount <= 0) return 'one';
-    const i = await choose({
-      title: `${action}: appuntamento ricorrente`,
-      message: `Ci sono altri ${futureCount} appuntamenti successivi in questa serie.`,
-      options: [
-        { label: 'Solo questo', destructive },
-        { label: `Questo e i successivi (${futureCount + 1})`, destructive },
-      ],
-      cancelLabel: 'Indietro',
-    });
-    return i === 0 ? 'one' : i === 1 ? 'following' : null;
-  }
-
-  async function changeStatus(status: 'annullato' | 'non_presentato' | 'programmato', label: string) {
-    if (status === 'annullato' && a?.seriesId && futureCount > 0) {
-      const s = await scope('Annulla', true);
-      if (!s) return;
-      if (s === 'following') {
-        const undo = await setStatusMany(following.map((x) => x.id), 'annullato');
-        toast({ message: `${following.length} appuntamenti annullati`, actionLabel: 'Annulla', onAction: () => void undo() });
-        return;
-      }
-    } else if (status === 'annullato') {
-      const ok = await confirm({ title: 'Annullare l’appuntamento?', message: 'Resterà nello storico come annullato.', confirmLabel: 'Annulla appuntamento', destructive: true, cancelLabel: 'Indietro' });
-      if (!ok) return;
-    }
-    const undo = await setAppointmentStatus(id, status);
-    toast({ message: label, actionLabel: 'Annulla', onAction: () => void undo() });
-  }
-
-  async function remove() {
-    if (a?.seriesId && futureCount > 0) {
-      const s = await scope('Elimina', true);
-      if (!s) return;
-      const ids = s === 'following' ? following.map((x) => x.id) : [id];
-      const undo = await deleteMany(ids);
-      onClose();
-      toast({ message: ids.length > 1 ? `${ids.length} appuntamenti eliminati` : 'Appuntamento eliminato', actionLabel: 'Annulla', onAction: () => void undo() });
-      return;
-    }
-    const ok = await confirm({
-      title: 'Eliminare l’appuntamento?',
-      message: 'Verrà rimosso anche dalle statistiche.',
-      confirmLabel: 'Elimina',
-      destructive: true,
-    });
-    if (!ok) return;
-    const undo = await deleteAppointment(id);
-    onClose();
-    toast({ message: 'Appuntamento eliminato', actionLabel: 'Annulla', onAction: () => void undo() });
+  async function backToScheduled() {
+    const undo = await setAppointmentStatus(id, 'programmato');
+    toast({ message: 'Riportato a programmato', actionLabel: 'Annulla', onAction: () => void undo() });
   }
 
   const noPhone = () => toast('Questo cliente non ha un numero di telefono valido.');
@@ -128,7 +83,7 @@ export function AppointmentDetail({
           {a.seriesId && (
             <span className="badge programmato" style={{ background: 'var(--fill-2)', color: 'var(--label-2)' }}>
               ↻ {repeatLabel(a.repeatWeeks ?? 1)}
-              {futureCount > 0 ? ` · altri ${futureCount}` : ''}
+              {a.openEnded ? ' · senza fine' : futureCount > 0 ? ` · altri ${futureCount}` : ''}
             </span>
           )}
         </p>
@@ -194,33 +149,37 @@ export function AppointmentDetail({
       )}
 
       <Section>
+        {a.seriesId && (
+          <button type="button" className="row action" onClick={() => ui.openSeries(a.seriesId!)}>
+            <span aria-hidden="true" style={{ width: 20, textAlign: 'center', fontSize: 18 }}>↻</span>
+            <span className="row-main">
+              <span style={{ display: 'block' }}>Modifica ricorrenza</span>
+              <span className="row-sub" style={{ display: 'block' }}>Intervallo, giorno, ora e servizi di tutti i prossimi</span>
+            </span>
+          </button>
+        )}
         <button type="button" className="row action" onClick={onEdit}>
           <IconPencil width={20} height={20} />
-          <span className="row-main">Modifica o sposta</span>
+          <span className="row-main">{a.seriesId ? 'Modifica o sposta solo questo' : 'Modifica o sposta'}</span>
         </button>
         {a.status === 'completato' && (
           <button type="button" className="row action" onClick={onCheckout}>
             <span className="row-main">Modifica incasso</span>
           </button>
         )}
-        {a.status === 'programmato' && (
-          <button type="button" className="row" style={{ color: 'var(--red)' }} onClick={() => changeStatus('non_presentato', 'Segnato come non presentato')}>
-            <span className="row-main">Non si è presentato</span>
-          </button>
-        )}
         {a.status !== 'programmato' && (
-          <button type="button" className="row action" onClick={() => changeStatus('programmato', 'Riportato a programmato')}>
+          <button type="button" className="row action" onClick={() => void backToScheduled()}>
             <span className="row-main">Riporta a programmato</span>
           </button>
         )}
       </Section>
-      <Section>
+      <Section footer={a.status === 'programmato' ? 'Usa «Annulla» anche se il cliente non si è presentato.' : undefined}>
         {a.status === 'programmato' && (
-          <button type="button" className="row destructive" onClick={() => changeStatus('annullato', 'Appuntamento annullato')}>
+          <button type="button" className="row destructive" onClick={() => void actions.cancel(a)}>
             Annulla appuntamento
           </button>
         )}
-        <button type="button" className="row destructive" onClick={remove}>
+        <button type="button" className="row destructive" onClick={async () => (await actions.remove(a)) && onClose()}>
           Elimina appuntamento
         </button>
       </Section>

@@ -417,6 +417,7 @@ button.row:active, a.row:active, .row.pressable:active { background: var(--cell-
 .badge.completato { background: color-mix(in srgb, var(--green-fill) 18%, transparent); color: var(--green); }
 .badge.annullato { background: var(--fill-2); color: var(--label-2); }
 .badge.non_presentato { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); }
+.badge.annullato { background: color-mix(in srgb, var(--red) 15%, transparent) !important; color: var(--red) !important; }
 .warn { display: flex; gap: 8px; align-items: flex-start; background: var(--yellow-bg); border-radius: 10px; padding: 10px 12px; font-size: 15px; margin: 0 16px 16px; }
 .warn svg { width: 20px; height: 20px; color: var(--orange); flex: none; margin-top: 1px; }
 .muted { color: var(--label-2); }
@@ -494,8 +495,7 @@ button.row:active, a.row:active, .row.pressable:active { background: var(--cell-
 }
 .tl-appt.completato { background: color-mix(in srgb, var(--green-fill) 18%, var(--cell)); border-left-color: var(--green-fill); }
 .tl-appt.annullato, .tl-appt.non_presentato { background: var(--fill-2); border-left-color: var(--gray); color: var(--label-2); text-decoration: line-through; }
-.tl-appt.non_presentato { border-left-color: var(--red); }
-.tl-appt.non_presentato strong { color: var(--red); }
+.tl-appt.annullato, .tl-appt.non_presentato { border-left-color: var(--red); }
 .tl-appt strong { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tl-appt span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--label-2); }
 .tl-appt:active { filter: brightness(0.92); }

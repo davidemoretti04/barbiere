@@ -13,6 +13,7 @@ import { useNow } from '../../hooks/useNow';
 import { navigate } from '../../router';
 import { useAppointmentUI } from '../appointments/context';
 import { ClientForm } from './ClientForm';
+import { AppointmentSwipeRow } from '../appointments/AppointmentSwipeRow';
 
 export function ClientDetailPage({ id }: { id: string }) {
   const client = useClient(id);
@@ -108,10 +109,10 @@ export function ClientDetailPage({ id }: { id: string }) {
       >
         {nextSeries.length ? (
           <Row
-            title={`↻ ${repeatLabel(nextSeries[0].repeatWeeks ?? 1)}`}
-            sub={`Prossimo ${fmt(nextSeries[0].start, "EEE d MMM 'alle' HH:mm")} · ${nextSeries.length} in programma`}
+            title={`↻ ${repeatLabel(nextSeries[0].repeatWeeks ?? 1)}${nextSeries[0].openEnded ? ' · senza fine' : ''}`}
+            sub={`Prossimo ${fmt(nextSeries[0].start, "EEE d MMM 'alle' HH:mm")} · tocca per modificare`}
             chevron
-            onClick={() => ui.openDetail(nextSeries[0].id)}
+            onClick={() => ui.openSeries(nextSeries[0].seriesId!)}
           />
         ) : (
           <Row title="Imposta appuntamenti ricorrenti" className="action" onClick={() => ui.openNew({ clientId: id })} />
@@ -144,9 +145,8 @@ export function ClientDetailPage({ id }: { id: string }) {
         </div>
       </div>
 
-      {(client.birthday || client.notes) && (
-        <Section header="Informazioni">
-          {client.birthday && <Row title="Compleanno" detail={fmt(new Date(client.birthday + 'T12:00:00'), 'd MMMM yyyy')} />}
+      {client.notes && (
+        <Section header="Note">
           {client.notes && (
             <div className="row" style={{ whiteSpace: 'pre-wrap', padding: '11px 16px' }}>
               {client.notes}
@@ -158,8 +158,8 @@ export function ClientDetailPage({ id }: { id: string }) {
       <Section header="Storico appuntamenti">
         {appts && appts.length === 0 && <Row title={<span className="muted">Nessun appuntamento</span>} />}
         {(appts ?? []).map((a) => (
+          <AppointmentSwipeRow key={a.id} appointment={a}>
           <Row
-            key={a.id}
             onClick={() => ui.openDetail(a.id)}
             title={fmt(a.start, "d MMM yyyy '·' HH:mm")}
             sub={servicesLabel(a)}
@@ -171,6 +171,7 @@ export function ClientDetailPage({ id }: { id: string }) {
             }
             chevron
           />
+          </AppointmentSwipeRow>
         ))}
       </Section>
 

@@ -6,6 +6,7 @@ import { useFeedback } from '../../components/feedback-context';
 import { AppointmentDetail } from './AppointmentDetail';
 import { AppointmentForm } from './AppointmentForm';
 import { CheckoutSheet } from './CheckoutSheet';
+import { SeriesSheet } from './SeriesSheet';
 import { AppointmentUIContext, type NewAppointmentPrefill } from './context';
 
 type SheetState =
@@ -13,6 +14,7 @@ type SheetState =
   | { kind: 'edit'; appt: Appointment }
   | { kind: 'detail'; id: string }
   | { kind: 'checkout'; appt: Appointment }
+  | { kind: 'series'; seriesId: string }
   | null;
 
 /** Gestisce i fogli di creazione, dettaglio, modifica e incasso, apribili da qualunque schermata. */
@@ -42,7 +44,7 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ openNew: (p?: NewAppointmentPrefill) => void openNew(p), openDetail, openEdit: (id: string) => void openEdit(id), openCheckout: (id: string) => void openCheckout(id) }),
+    () => ({ openNew: (p?: NewAppointmentPrefill) => void openNew(p), openDetail, openEdit: (id: string) => void openEdit(id), openCheckout: (id: string) => void openCheckout(id), openSeries: (seriesId: string) => setSheet({ kind: 'series', seriesId }) }),
     [openNew, openDetail, openEdit, openCheckout],
   );
   const close = () => setSheet(null);
@@ -77,6 +79,9 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
           onEdit={() => void openEdit(sheet.id)}
           onCheckout={() => void openCheckout(sheet.id)}
         />
+      )}
+      {sheet?.kind === 'series' && (
+        <SeriesSheet seriesId={sheet.seriesId} onClose={close} onOpenDetail={(id) => setSheet({ kind: 'detail', id })} />
       )}
       {sheet?.kind === 'checkout' && (
         <CheckoutSheet appointment={sheet.appt} onClose={() => setSheet({ kind: 'detail', id: sheet.appt.id })} onDone={close} />

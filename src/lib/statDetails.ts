@@ -10,7 +10,7 @@ export const STAT_TITLES: Record<StatKind, string> = {
   ticket: 'Scontrino medio',
   tips: 'Mance',
   newClients: 'Nuovi clienti',
-  cancelled: 'Annullati e assenti',
+  cancelled: 'Annullati',
   expenses: 'Spese',
   profit: 'Utile',
   service: 'Servizio',

@@ -2,7 +2,7 @@ import { addDays, addMonths, isSameDay, startOfDay } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { BackupBanner } from '../../components/BackupBanner';
 import { useFeedback } from '../../components/feedback-context';
-import { IconCake, IconCalendar, IconCalendarPlus, IconChat, IconCheck, IconUserPlus } from '../../components/Icons';
+import { IconCalendar, IconCalendarPlus, IconChat, IconCheck, IconUserPlus } from '../../components/Icons';
 import { Page, Row, Section } from '../../components/ui';
 import { useAllAppointments, useClients, useSettings } from '../../db/hooks';
 import type { Appointment, Client } from '../../db/types';
@@ -12,10 +12,11 @@ import { dailyCollected, greeting, pendingCheckout, relativeStart, upcomingAppoi
 import { formatEuro } from '../../lib/money';
 import { whatsappLink } from '../../lib/phone';
 import { closureFor, nextFreeSlot, workRangesFor } from '../../lib/schedule';
-import { computeKpis, dayTotals, inactiveClients, percentChange, periodRange, upcomingBirthdays, type DateRange } from '../../lib/stats';
+import { computeKpis, dayTotals, inactiveClients, percentChange, periodRange, type DateRange } from '../../lib/stats';
 import { navigate } from '../../router';
 import { useAppointmentUI } from '../appointments/context';
 import { ClientForm } from '../clients/ClientForm';
+import { AppointmentSwipeRow } from '../appointments/AppointmentSwipeRow';
 
 export function HomePage() {
   const now = useNow();
@@ -49,7 +50,6 @@ export function HomePage() {
       month: k(toNow(month)),
       prevMonth: k(prevMonth),
       last7: dailyCollected(appts, 7, now),
-      birthdays: upcomingBirthdays(clients, now, 7),
       inactive: inactiveClients(clients, appts, settings.inactiveWeeks, now).length,
     };
   }, [appts, clients, settings, now, today]);
@@ -121,9 +121,10 @@ export function HomePage() {
 
       {/* ----- Da incassare ----- */}
       {data.pending.length > 0 && (
-        <Section header={`Da incassare (${data.pending.length})`} footer="Appuntamenti già passati ancora da segnare come completati o assenti.">
+        <Section header={`Da incassare (${data.pending.length})`} footer="Appuntamenti già passati ancora da segnare come completati o annullati.">
           {data.pending.slice(0, 5).map((a) => (
-            <div key={a.id} className="row">
+            <AppointmentSwipeRow key={a.id} appointment={a}>
+            <div className="row">
               <button type="button" className="row-main" style={{ textAlign: 'left' }} onClick={() => ui.openDetail(a.id)}>
                 <span className="row-title" style={{ display: 'block' }}>
                   {clientName(byId.get(a.clientId))}
@@ -136,6 +137,7 @@ export function HomePage() {
                 <IconCheck /> Incassa
               </button>
             </div>
+            </AppointmentSwipeRow>
           ))}
           {data.pending.length > 5 && <Row title={<span className="muted">e altri {data.pending.length - 5}…</span>} onClick={() => navigate('/agenda')} />}
         </Section>
@@ -158,8 +160,8 @@ export function HomePage() {
       {later.length > 0 && (
         <Section header="Poi">
           {later.map((a) => (
+            <AppointmentSwipeRow key={a.id} appointment={a}>
             <Row
-              key={a.id}
               onClick={() => ui.openDetail(a.id)}
               leading={
                 <span className="num" style={{ width: 52, flex: 'none', fontWeight: 600 }}>
@@ -170,6 +172,7 @@ export function HomePage() {
               sub={isSameDay(a.start, today) ? servicesLabel(a) : `${capitalize(fmt(a.start, 'EEEE d'))} · ${servicesLabel(a)}`}
               detail={formatEuro(a.amountCents)}
             />
+            </AppointmentSwipeRow>
           ))}
         </Section>
       )}
@@ -201,19 +204,8 @@ export function HomePage() {
       </Section>
 
       {/* ----- Clienti ----- */}
-      {(data.birthdays.length > 0 || data.inactive > 0) && (
+      {data.inactive > 0 && (
         <Section header="Clienti">
-          {data.birthdays.map((b) => (
-            <Row
-              key={b.client.id}
-              icon={<IconCake />}
-              iconBg="#ff2d55"
-              title={`${clientName(b.client)}${b.age ? ` compie ${b.age} anni` : ' festeggia il compleanno'}`}
-              sub={b.daysUntil === 0 ? 'Oggi' : b.daysUntil === 1 ? 'Domani' : capitalize(fmt(b.date, 'EEEE d MMMM'))}
-              chevron
-              onClick={() => navigate(`/clienti/${b.client.id}`)}
-            />
-          ))}
           {data.inactive > 0 && (
             <Row
               icon={<IconChat />}

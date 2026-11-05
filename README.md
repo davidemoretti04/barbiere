@@ -107,17 +107,22 @@ Le schede in basso sono: **Home · Agenda · Clienti · Statistiche · Spese · 
   Se l’orario si sovrappone a un altro o è fuori orario compare un avviso, ma puoi salvare comunque.
 - **Nuovo cliente abituale**: nel modulo del nuovo cliente attiva **Appuntamenti ricorrenti** e scegli ogni quante settimane:
   dopo il salvataggio si apre il primo appuntamento con *Ripeti* già impostato.
-- **Appuntamenti ricorrenti** (clienti abituali): nel nuovo appuntamento scegli **Ripeti** (ogni 1–8 settimane) e **Quante volte**:
-  vengono creati tutti gli appuntamenti alla stessa ora, con avviso se qualcuno si sovrappone o cade in un giorno di chiusura.
-  La stella ★ indica l’intervallo con cui il cliente viene di solito. Annullando o eliminando un appuntamento della serie puoi scegliere
-  **Solo questo** o **Questo e i successivi**. Nella scheda cliente la sezione *Cliente abituale* mostra la serie attiva.
+- **Appuntamenti ricorrenti** (clienti abituali): nel nuovo appuntamento scegli **Ripeti** (ogni 1–8 settimane) e **Quante volte**
+  (4, 6, 8, 12 oppure **∞ Sempre**: continua finché non lo togli; l’app tiene sempre pronti i prossimi 6 mesi e li allunga da sola).
+  La stella ★ indica l’intervallo con cui il cliente viene di solito. Avvisa se una data si sovrappone o cade in un giorno di chiusura.
+- **Modificare una ricorrenza**: da *Clienti → Ricorrenti*, dalla scheda del cliente (*Cliente abituale*) o dal dettaglio di un appuntamento
+  (**Modifica ricorrenza**) puoi cambiare intervallo, giorno e ora, quante volte, servizi, durata e importo di **tutti i prossimi** appuntamenti,
+  oppure **Terminare la ricorrenza**. Per spostare un solo appuntamento usa *Modifica o sposta solo questo*.
+- **Annullare o eliminare**: scorri a sinistra una riga (o un blocco nella vista Giorno) oppure usa i tasti nel dettaglio.
+  Per le serie scegli **Solo questo** o **Questo e i successivi** (che ferma la serie). «Non si è presentato» si segna come **Annullato**.
 - **Incassare**: tocca l’appuntamento → **Segna come completato** → controlla l’importo (sconto/extra),
   mancia e metodo di pagamento (facoltativi) → **Incassa**. Solo gli appuntamenti completati contano negli incassi.
 - **Promemoria**: dal dettaglio dell’appuntamento, **Promemoria** apre WhatsApp con il messaggio pronto
   (il testo si cambia in *Impostazioni*); c’è anche **SMS**.
 - **Calendario di iPhone**: nel nuovo appuntamento l’opzione **Aggiungi al Calendario** è già attiva: dopo il salvataggio iPhone
   mostra l’evento (o tutta la serie ricorrente) e basta toccare **Aggiungi** / **Aggiungi tutti**, con avviso 30 minuti prima.
-  Si può spegnere per il singolo appuntamento. Dal dettaglio, il tasto **Calendario** lo riaggiunge in qualsiasi momento.
+  Le serie «Sempre» entrano nel Calendario come un unico evento che si ripete senza fine.
+  Si può spegnere per il singolo appuntamento. Dal dettaglio, il tasto **Aggiungi al Calendario** lo riaggiunge in qualsiasi momento.
 - **Chiudere i fogli**: oltre a *Chiudi*, puoi trascinarli verso il basso. Nei moduli con dati l’app chiede prima conferma.
 - **Annullare un’azione**: dopo eliminazioni, incassi e annullamenti compare un avviso in basso con **Annulla**.
 - **Scorri a sinistra** sulle righe (settimana, clienti, listino, spese) per le azioni rapide.

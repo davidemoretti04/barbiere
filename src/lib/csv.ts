@@ -33,7 +33,7 @@ export function revenueCsv(appts: Appointment[], clients: Client[]): string {
 }
 
 export function clientsCsv(clients: Client[], appts: Appointment[]): string {
-  const rows: (string | number)[][] = [['Nome', 'Cognome', 'Telefono', 'Compleanno', 'Visite', 'Totale speso (EUR)', 'Note']];
+  const rows: (string | number)[][] = [['Nome', 'Cognome', 'Telefono', 'Visite', 'Totale speso (EUR)', 'Note']];
   const agg = new Map<string, { visits: number; total: number }>();
   for (const a of appts) {
     if (a.status !== 'completato') continue;
@@ -44,7 +44,7 @@ export function clientsCsv(clients: Client[], appts: Appointment[]): string {
   }
   for (const c of [...clients].sort((a, b) => clientName(a).localeCompare(clientName(b), 'it'))) {
     const g = agg.get(c.id) ?? { visits: 0, total: 0 };
-    rows.push([c.firstName, c.lastName, c.phone, c.birthday ?? '', g.visits, euro(g.total), c.notes]);
+    rows.push([c.firstName, c.lastName, c.phone, g.visits, euro(g.total), c.notes]);
   }
   return toCsv(rows);
 }

@@ -2,7 +2,7 @@
  * Dati di esempio COMPLETAMENTE FINTI (nomi inventati, numeri 333 000 xxxx non reali).
  * Vengono generati sul telefono solo quando l'utente lo chiede da "Backup e dati".
  */
-import { addDays, startOfDay } from 'date-fns';
+import { addDays, addWeeks, startOfDay } from 'date-fns';
 import { DEFAULT_SETTINGS, type Appointment, type Client, type Expense, type Service, type Settings } from '../db/types';
 import type { BackupData } from './backup';
 import { atMinutes, parseHM, toDateKey, workRangesFor } from './schedule';
@@ -53,10 +53,6 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
     [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
   }
   const clients: Client[] = Array.from({ length: 110 }, (_, i) => {
-    const birthday =
-      rand() < 0.5
-        ? `${1960 + Math.floor(rand() * 45)}-${String(1 + Math.floor(rand() * 12)).padStart(2, '0')}-${String(1 + Math.floor(rand() * 28)).padStart(2, '0')}`
-        : undefined;
     const c: Client = {
       id: id('cliente', i),
       firstName: pairs[i][0],
@@ -65,7 +61,6 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
       notes: i % 5 === 0 ? 'Preferisce sfumatura bassa' : '',
       createdAt: addDays(today, -150 + Math.floor(rand() * 140)).getTime(),
     };
-    if (birthday) c.birthday = birthday;
     return c;
   });
 
@@ -91,7 +86,7 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
             : roll < 0.06
               ? 'annullato'
               : roll < 0.09
-                ? 'non_presentato'
+                ? 'annullato'
                 : 'completato';
           const extra = status === 'completato' && rand() < 0.1 ? 300 : 0;
           appointments.push({
@@ -113,6 +108,44 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
       }
     }
   }
+  // Alcuni clienti abituali con appuntamenti ricorrenti già in programma
+  const SERIES = [
+    { client: 3, weeks: 3, svc: 0 },
+    { client: 7, weeks: 2, svc: 2 },
+    { client: 12, weeks: 4, svc: 0 },
+    { client: 18, weeks: 3, svc: 1 },
+  ];
+  SERIES.forEach((cfg, k) => {
+    // primo giorno lavorativo a partire da dopodomani (+k), alle 9:00
+    let day = addDays(today, 2 + k);
+    for (let g = 0; g < 14 && workRangesFor(day, settings).length === 0; g++) day = addDays(day, 1);
+    const svc = services[cfg.svc];
+    const count = k === 2 ? 2 : 6; // una serie quasi finita, per mostrare l'avviso
+    for (let i = 0; i < count; i++) {
+      const start = atMinutes(addWeeks(day, i * cfg.weeks), parseHM('09:00') + k * 60).getTime(); // un orario diverso per serie
+      const end = start + svc.durationMinutes * 60000;
+      // libera lo spazio occupato da appuntamenti di esempio casuali
+      for (let x = appointments.length - 1; x >= 0; x--) {
+        const a = appointments[x];
+        if (!a.seriesId && a.start < end && start < a.end) appointments.splice(x, 1);
+      }
+      appointments.push({
+        id: id('serie', k * 100 + i),
+        clientId: clients[cfg.client].id,
+        start,
+        end,
+        services: [{ serviceId: svc.id, name: svc.name, priceCents: svc.priceCents, durationMinutes: svc.durationMinutes }],
+        status: 'programmato',
+        amountCents: svc.priceCents,
+        tipCents: 0,
+        notes: '',
+        seriesId: id('serie', k),
+        repeatWeeks: cfg.weeks,
+        ...(k === 0 ? { openEnded: true } : {}),
+      });
+    }
+  });
+
   for (const a of appointments) if (a.paymentMethod === undefined) delete a.paymentMethod;
   // il cliente "esiste" dalla sua prima visita
   for (const c of clients) {

@@ -7,8 +7,6 @@ export interface Client {
   lastName: string;
   phone: string;
   notes: string;
-  /** Data di nascita in formato 'YYYY-MM-DD' (opzionale). */
-  birthday?: string;
   /** Epoch in millisecondi. */
   createdAt: number;
 }
@@ -49,6 +47,8 @@ export interface Appointment {
   seriesId?: string;
   /** Ogni quante settimane si ripete la serie. */
   repeatWeeks?: number;
+  /** Serie «Sempre»: continua finché non viene tolta (l'app aggiunge da sola le date future). */
+  openEnded?: boolean;
 }
 
 export interface Expense {

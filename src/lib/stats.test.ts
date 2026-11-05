@@ -16,7 +16,6 @@ import {
   shiftRange,
   topClients,
   topServices,
-  upcomingBirthdays,
   weekdayDistribution,
 } from './stats';
 
@@ -251,21 +250,6 @@ describe('clienti', () => {
     expect(res[0].weeksAgo).toBe(13);
   });
 
-  it('prossimi compleanni, anche il 29 febbraio', () => {
-    const now = d(2027, 2, 20, 9);
-    const list = [
-      client('oggi', 0, { birthday: '1990-02-20' }),
-      client('bisestile', 0, { birthday: '2000-02-29' }),
-      client('lontano', 0, { birthday: '1980-08-01' }),
-      client('passato', 0, { birthday: '1985-02-10' }),
-      client('senza', 0),
-    ];
-    const res = upcomingBirthdays(list, now, 60);
-    expect(res.map((r) => [r.client.id, r.daysUntil, r.age])).toEqual([
-      ['oggi', 0, 37],
-      ['bisestile', 8, 27], // 2027 non è bisestile → 28/2
-    ]);
-  });
 });
 
 describe('totali del giorno', () => {

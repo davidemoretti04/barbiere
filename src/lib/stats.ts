@@ -346,33 +346,6 @@ export function inactiveClients(
   return res.sort((a, b) => a.lastVisit - b.lastVisit);
 }
 
-export interface UpcomingBirthday {
-  client: Client;
-  date: Date;
-  daysUntil: number;
-  /** Età che compirà (se l'anno è noto). */
-  age: number | null;
-}
-
-/** Prossimi compleanni nei prossimi `withinDays` giorni (oggi incluso). 29/2 → 28/2 negli anni non bisestili. */
-export function upcomingBirthdays(clients: Client[], now: number = Date.now(), withinDays = 60): UpcomingBirthday[] {
-  const today = startOfDay(new Date(now));
-  const res: UpcomingBirthday[] = [];
-  for (const c of clients) {
-    if (!c.birthday || !/^\d{4}-\d{2}-\d{2}$/.test(c.birthday)) continue;
-    const [y, m, d] = c.birthday.split('-').map(Number);
-    const make = (year: number) => {
-      const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-      return new Date(year, m - 1, m === 2 && d === 29 && !isLeap ? 28 : d);
-    };
-    let next = make(today.getFullYear());
-    if (next < today) next = make(today.getFullYear() + 1);
-    const days = differenceInCalendarDays(next, today);
-    if (days > withinDays) continue;
-    res.push({ client: c, date: next, daysUntil: days, age: y > 1900 ? next.getFullYear() - y : null });
-  }
-  return res.sort((a, b) => a.daysUntil - b.daysUntil);
-}
 
 export interface DayTotals {
   count: number;

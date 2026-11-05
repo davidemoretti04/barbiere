@@ -1,18 +1,16 @@
 import { db } from './db';
 import type { Appointment, Client, Expense, Service } from './types';
 import { newId } from '../lib/id';
+import { extendOpenSeries } from '../lib/recurrence';
 
 export async function createClient(data: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
   const c: Client = { ...data, id: newId(), createdAt: Date.now() };
-  if (!c.birthday) delete c.birthday;
   await db.clients.add(c);
   return c;
 }
 
 export async function saveClient(c: Client): Promise<void> {
-  const copy = { ...c };
-  if (!copy.birthday) delete copy.birthday;
-  await db.clients.put(copy);
+  await db.clients.put({ ...c });
 }
 
 /** Elimina un cliente e i suoi appuntamenti; ritorna una funzione per annullare. */
@@ -105,5 +103,54 @@ export async function deleteExpense(id: string): Promise<() => Promise<void>> {
   await db.expenses.delete(id);
   return async () => {
     if (e) await db.expenses.put(e);
+  };
+}
+
+/**
+ * Termina una serie da un appuntamento in poi: i programmati successivi vengono annullati o eliminati
+ * e la serie smette di essere «Sempre». Ritorna una funzione per annullare tutto.
+ */
+export async function endSeriesFrom(seriesId: string, fromStart: number, mode: 'cancel' | 'delete'): Promise<() => Promise<void>> {
+  const all = await db.appointments.where('seriesId').equals(seriesId).toArray();
+  const following = new Set(all.filter((a) => a.start >= fromStart && a.status === 'programmato').map((a) => a.id));
+  await db.transaction('rw', db.appointments, async () => {
+    if (mode === 'delete') await db.appointments.bulkDelete([...following]);
+    const updated = all
+      .filter((a) => mode === 'cancel' || !following.has(a.id))
+      .map((a) => {
+        const copy: Appointment = { ...a, status: following.has(a.id) ? 'annullato' : a.status };
+        delete copy.openEnded;
+        return copy;
+      });
+    await db.appointments.bulkPut(updated);
+  });
+  return async () => {
+    await db.transaction('rw', db.appointments, async () => {
+      await db.appointments.where('seriesId').equals(seriesId).delete();
+      await db.appointments.bulkPut(all);
+    });
+  };
+}
+
+/** Allunga le serie «Sempre» (all'avvio dell'app). Ritorna quanti appuntamenti ha aggiunto. */
+export async function topUpOpenSeries(now: number = Date.now()): Promise<number> {
+  const withSeries = await db.appointments.where('seriesId').above('').toArray();
+  const extra = extendOpenSeries(withSeries, now, newId);
+  if (extra.length) await db.appointments.bulkPut(extra);
+  return extra.length;
+}
+
+/** Applica la modifica di una serie (vedi planSeriesUpdate). Ritorna una funzione per annullare. */
+export async function applySeriesUpdate(seriesId: string, plan: { removeIds: string[]; add: Appointment[] }): Promise<() => Promise<void>> {
+  const before = await db.appointments.where('seriesId').equals(seriesId).toArray();
+  await db.transaction('rw', db.appointments, async () => {
+    await db.appointments.bulkDelete(plan.removeIds);
+    await db.appointments.bulkPut(plan.add);
+  });
+  return async () => {
+    await db.transaction('rw', db.appointments, async () => {
+      await db.appointments.where('seriesId').equals(seriesId).delete();
+      await db.appointments.bulkPut(before);
+    });
   };
 }

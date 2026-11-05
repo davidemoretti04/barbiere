@@ -7,21 +7,31 @@ import { normalizePhone } from '../../lib/phone';
 import { REPEAT_WEEKS_OPTIONS, repeatLabel } from '../../lib/recurrence';
 import { useAppointmentUI } from '../appointments/context';
 
-export function ClientForm({ client, onClose, onSaved }: { client?: Client; onClose: () => void; onSaved: (c: Client) => void }) {
+export function ClientForm({
+  client,
+  onClose,
+  onSaved,
+  defaultRecurring = false,
+}: {
+  client?: Client;
+  onClose: () => void;
+  onSaved: (c: Client) => void;
+  /** Apre il modulo con «Appuntamenti ricorrenti» già attivo. */
+  defaultRecurring?: boolean;
+}) {
   const [first, setFirst] = useState(client?.firstName ?? '');
   const [last, setLast] = useState(client?.lastName ?? '');
   const [phone, setPhone] = useState(client?.phone ?? '');
-  const [birthday, setBirthday] = useState(client?.birthday ?? '');
   const [notes, setNotes] = useState(client?.notes ?? '');
   const [error, setError] = useState('');
-  const [recurring, setRecurring] = useState(false);
+  const [recurring, setRecurring] = useState(defaultRecurring);
   const [weeks, setWeeks] = useState(3);
   const ui = useAppointmentUI();
 
   async function save() {
     if (!first.trim()) return setError('Scrivi almeno il nome.');
     if (phone.trim() && !normalizePhone(phone)) return setError('Il numero di telefono non sembra valido.');
-    const data = { firstName: first.trim(), lastName: last.trim(), phone: phone.trim(), notes: notes.trim(), birthday: birthday || undefined };
+    const data = { firstName: first.trim(), lastName: last.trim(), phone: phone.trim(), notes: notes.trim() };
     if (client) {
       const c = { ...client, ...data };
       await saveClient(c);
@@ -59,11 +69,6 @@ export function ClientForm({ client, onClose, onSaved }: { client?: Client; onCl
         </Field>
         <Field label="Telefono">
           <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="333 123 4567" autoComplete="off" />
-        </Field>
-      </Section>
-      <Section footer="Facoltativo: serve per l’elenco dei prossimi compleanni.">
-        <Field label="Compleanno">
-          <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
         </Field>
       </Section>
       {!client && (

@@ -5,6 +5,7 @@ import { FeedbackProvider } from './components/FeedbackProvider';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { db, requestPersistentStorage } from './db/db';
 import { loadSampleOnFirstRun } from './lib/firstRun';
+import { topUpOpenSeries } from './db/actions';
 import './styles/global.css';
 
 // Chiede al sistema di non cancellare i dati locali (IndexedDB) quando manca spazio.
@@ -22,6 +23,8 @@ function render() {
 }
 
 // Primo avvio: l'app parte già con i dati di esempio (segnalati da un banner).
+// Serie «Sempre»: a ogni apertura si aggiungono le date future mancanti (sempre 6 mesi pronti).
 loadSampleOnFirstRun(db, localStorage)
   .catch(() => false)
+  .then(() => topUpOpenSeries().catch(() => 0))
   .finally(render);

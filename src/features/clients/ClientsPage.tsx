@@ -1,20 +1,22 @@
 import { useMemo, useState } from 'react';
 import { useFeedback } from '../../components/feedback-context';
-import { IconCake, IconChat, IconPeople, IconPlus, IconSearch } from '../../components/Icons';
+import { IconCalendarPlus, IconChat, IconPeople, IconPlus, IconSearch } from '../../components/Icons';
 import { SwipeRow } from '../../components/SwipeRow';
-import { EmptyState, Page, Section, Segmented } from '../../components/ui';
+import { EmptyState, Page, Row, Section, Segmented } from '../../components/ui';
 import { deleteClient } from '../../db/actions';
 import { useAllAppointments, useClients, useSettings } from '../../db/hooks';
 import type { Client } from '../../db/types';
 import { clientName, fmt, initials } from '../../lib/format';
 import { formatPhone, whatsappLink } from '../../lib/phone';
 import { matchClient } from '../../lib/search';
-import { inactiveClients, upcomingBirthdays } from '../../lib/stats';
+import { inactiveClients } from '../../lib/stats';
+import { recurringClients, repeatLabel } from '../../lib/recurrence';
 import { navigate } from '../../router';
 import { useNow } from '../../hooks/useNow';
 import { ClientForm } from './ClientForm';
+import { useAppointmentUI } from '../appointments/context';
 
-type Tab = 'tutti' | 'ricontattare' | 'compleanni';
+type Tab = 'tutti' | 'ricontattare' | 'ricorrenti';
 let lastTab: Tab = 'tutti';
 
 export function ClientsPage() {
@@ -24,15 +26,16 @@ export function ClientsPage() {
   const { confirm, toast } = useFeedback();
   const [tab, setTabState] = useState<Tab>(() => {
     const q = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('tab');
-    return q === 'tutti' || q === 'ricontattare' || q === 'compleanni' ? q : lastTab;
+    return q === 'tutti' || q === 'ricontattare' || q === 'ricorrenti' ? q : lastTab;
   });
   const setTab = (t: Tab) => {
     lastTab = t;
     setTabState(t);
   };
   const [query, setQuery] = useState('');
+  const ui = useAppointmentUI();
   const now = useNow();
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<false | 'normale' | 'ricorrente'>(false);
 
   const visitCount = useMemo(() => {
     const m = new Map<string, number>();
@@ -57,7 +60,7 @@ export function ClientsPage() {
     () => (clients && appts && settings ? inactiveClients(clients, appts, settings.inactiveWeeks, now) : []),
     [clients, appts, settings, now],
   );
-  const birthdays = useMemo(() => (clients ? upcomingBirthdays(clients, now, 60) : []), [clients, now]);
+  const recurring = useMemo(() => (clients && appts ? recurringClients(clients, appts, now) : []), [clients, appts, now]);
 
   async function remove(c: Client) {
     const n = visitCount.get(c.id) ?? 0;
@@ -78,7 +81,7 @@ export function ClientsPage() {
     <Page
       title="Clienti"
       right={
-        <button type="button" className="nav-btn" onClick={() => setCreating(true)} aria-label="Nuovo cliente">
+        <button type="button" className="nav-btn" onClick={() => setCreating('normale')} aria-label="Nuovo cliente">
           <IconPlus />
         </button>
       }
@@ -90,7 +93,7 @@ export function ClientsPage() {
         options={[
           { value: 'tutti', label: 'Tutti' },
           { value: 'ricontattare', label: `Da ricontattare${inactive.length ? ` (${inactive.length})` : ''}` },
-          { value: 'compleanni', label: 'Compleanni' },
+          { value: 'ricorrenti', label: `Ricorrenti${recurring.length ? ` (${recurring.length})` : ''}` },
         ]}
       />
 
@@ -113,7 +116,7 @@ export function ClientsPage() {
               title="Nessun cliente"
               text="Aggiungi il primo cliente: bastano nome e telefono. Puoi crearli anche direttamente dall’agenda."
               action={
-                <button type="button" className="btn" onClick={() => setCreating(true)}>
+                <button type="button" className="btn" onClick={() => setCreating('normale')}>
                   <IconPlus /> Nuovo cliente
                 </button>
               }
@@ -184,38 +187,47 @@ export function ClientsPage() {
         </>
       )}
 
-      {tab === 'compleanni' && (
+      {tab === 'ricorrenti' && (
         <>
-          {birthdays.length === 0 ? (
+          {recurring.length === 0 ? (
             <EmptyState
-              icon={<IconCake />}
-              title="Nessun compleanno in arrivo"
-              text="Qui compaiono i compleanni dei prossimi 60 giorni. Aggiungi la data nella scheda del cliente."
+              icon={<IconCalendarPlus />}
+              title="Nessun cliente ricorrente"
+              text="Qui compaiono i clienti abituali con appuntamenti fissi (es. ogni 3 settimane). Creane uno nuovo oppure usa «Ripeti» quando prenoti."
+              action={
+                <button type="button" className="btn" onClick={() => setCreating('ricorrente')}>
+                  <IconPlus /> Nuovo cliente abituale
+                </button>
+              }
             />
           ) : (
-            <Section header="Prossimi 60 giorni">
-              {birthdays.map(({ client: c, date, daysUntil, age }) => {
-                const wa = c.phone ? whatsappLink(c.phone, `Tanti auguri ${c.firstName}! 🎉`) : null;
+            <Section
+              footer="Tocca un cliente per modificare la ricorrenza (intervallo, giorno, ora, servizi) o terminarla."
+              headerRight={
+                <button type="button" className="nav-btn" style={{ minHeight: 0, fontSize: 15, textTransform: 'none' }} onClick={() => setCreating('ricorrente')}>
+                  + Nuovo
+                </button>
+              }
+              header={`${recurring.length} ${recurring.length === 1 ? 'cliente' : 'clienti'}`}
+            >
+              {recurring.map((r) => {
+                const ending = !r.openEnded && r.remaining <= 2;
                 return (
-                  <div key={c.id} className="row">
-                    <button type="button" className="row-main" style={{ textAlign: 'left' }} onClick={() => navigate(`/clienti/${c.id}`)}>
-                      <span className="row-title" style={{ display: 'block' }}>
-                        {clientName(c)}
+                  <Row
+                    key={r.client.id}
+                    onClick={() => ui.openSeries(r.next.seriesId!)}
+                    title={clientName(r.client)}
+                    sub={`↻ ${repeatLabel(r.repeatWeeks)} · prossimo ${fmt(r.next.start, "EEE d MMM 'alle' HH:mm")}`}
+                    detail={
+                      <span style={{ textAlign: 'right', display: 'block' }}>
+                        <span style={{ display: 'block', color: ending ? 'var(--orange)' : undefined, fontWeight: ending ? 600 : 400 }}>
+                          {r.openEnded ? '∞ Sempre' : ending ? (r.remaining === 1 ? 'Ultimo' : 'Ultimi 2') : `${r.remaining} in programma`}
+                        </span>
+                        {!r.openEnded && <span className="small">fino al {fmt(r.last.start, 'd MMM')}</span>}
                       </span>
-                      <span className="row-sub" style={{ display: 'block' }}>
-                        {fmt(date, 'EEEE d MMMM')}
-                        {age ? ` · ${age} anni` : ''}
-                      </span>
-                    </button>
-                    <span className="row-detail small" style={{ color: daysUntil === 0 ? 'var(--red)' : undefined, fontWeight: daysUntil === 0 ? 600 : 400 }}>
-                      {daysUntil === 0 ? 'Oggi' : daysUntil === 1 ? 'Domani' : `tra ${daysUntil} gg`}
-                    </span>
-                    {wa && (
-                      <a className="icon-btn" href={wa} target="_blank" rel="noopener noreferrer" aria-label={`Fai gli auguri a ${clientName(c)} su WhatsApp`}>
-                        <IconChat />
-                      </a>
-                    )}
-                  </div>
+                    }
+                    chevron
+                  />
                 );
               })}
             </Section>
@@ -225,6 +237,7 @@ export function ClientsPage() {
 
       {creating && (
         <ClientForm
+          defaultRecurring={creating === 'ricorrente'}
           onClose={() => setCreating(false)}
           onSaved={(c) => {
             setCreating(false);

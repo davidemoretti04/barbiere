@@ -21,6 +21,7 @@ import {
 import { computeKpis, expensesByCategory, type DateRange } from '../../lib/stats';
 import { navigate } from '../../router';
 import { useAppointmentUI } from '../appointments/context';
+import { AppointmentSwipeRow } from '../appointments/AppointmentSwipeRow';
 
 export interface StatDetailTarget {
   kind: StatKind;
@@ -48,8 +49,8 @@ export function StatDetailSheet({ target: initial, range, rangeLabel, appts, cli
   const { kind } = target;
 
   const apptRow = (a: Appointment, detail: ReactNode = formatEuro(a.amountCents), withDate = false) => (
+    <AppointmentSwipeRow key={a.id} appointment={a}>
     <Row
-      key={a.id}
       onClick={() => ui.openDetail(a.id)}
       leading={
         <span className="num" style={{ width: withDate ? 78 : 48, flex: 'none', fontWeight: 600, fontSize: withDate ? 14 : 17 }}>
@@ -60,6 +61,7 @@ export function StatDetailSheet({ target: initial, range, rangeLabel, appts, cli
       sub={`${servicesLabel(a)}${a.paymentMethod ? ` · ${PAYMENT_LABEL[a.paymentMethod]}` : ''}`}
       detail={detail}
     />
+    </AppointmentSwipeRow>
   );
 
   const dayGroups = (list: Appointment[], detail?: (a: Appointment) => ReactNode) =>
@@ -148,17 +150,13 @@ export function StatDetailSheet({ target: initial, range, rangeLabel, appts, cli
     );
   } else if (kind === 'cancelled') {
     const { cancelled, noShow } = cancelledLists(appts, range);
-    const lost = [...cancelled, ...noShow].reduce((s, a) => s + a.amountCents, 0);
+    // «non presentato» e «annullato» sono la stessa cosa nell'app
+    const all = [...cancelled, ...noShow].sort((x, y) => y.start - x.start);
+    const lost = all.reduce((s, a) => s + a.amountCents, 0);
     body = (
       <>
-        {hero(`${cancelled.length} / ${noShow.length}`, `annullati / non presentati · ${formatEuro(lost)} di incasso mancato`)}
-        {noShow.length > 0 && (
-          <Section header={<span style={{ color: 'var(--red)' }}>Non si sono presentati ({noShow.length})</span>}>
-            {noShow.map((a) => apptRow(a, <span style={{ color: 'var(--red)' }}>{formatEuro(a.amountCents)}</span>, true))}
-          </Section>
-        )}
-        {cancelled.length > 0 && <Section header={`Annullati (${cancelled.length})`}>{cancelled.map((a) => apptRow(a, undefined, true))}</Section>}
-        {!cancelled.length && !noShow.length && empty}
+        {hero(String(all.length), `${formatEuro(lost)} di incasso mancato`)}
+        {all.length ? <Section>{all.map((a) => apptRow(a, <span style={{ color: 'var(--red)' }}>{formatEuro(a.amountCents)}</span>, true))}</Section> : empty}
       </>
     );
   } else if (kind === 'expenses') {

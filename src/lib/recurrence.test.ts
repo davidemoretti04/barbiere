@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, type Appointment } from '../db/types';
 import { parseBackup, serializeBackup, createBackup } from './backup';
-import { buildSeries, repeatLabel, seriesFrom, seriesIssues, suggestedRepeatWeeks } from './recurrence';
+import { buildSeries, recurringClients, repeatLabel, seriesFrom, seriesIssues, suggestedRepeatWeeks } from './recurrence';
 
 const base: Appointment = {
   id: 'first',
@@ -75,5 +75,19 @@ describe('appuntamenti ricorrenti', () => {
     const r = parseBackup(JSON.stringify({ app: 'barbiere-gestionale', schemaVersion: 1, exportedAt: '', data: { appointments: [{ ...base }] } }));
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.backup.data.appointments[0].seriesId).toBeUndefined();
+  });
+
+  it('elenco dei clienti ricorrenti', () => {
+    const now = new Date(2026, 9, 20).getTime(); // dopo il primo appuntamento della serie
+    const other = buildSeries({ ...base, id: 'b1', clientId: 'c2', start: base.start + 86400000, end: base.end + 86400000 }, 2, 3, mk, 'S2');
+    const clients = ['c1', 'c2', 'c3'].map((id) => ({ id, firstName: id, lastName: '', phone: '', notes: '', createdAt: 0 }));
+    const all = [...series, ...other.map((a, i) => (i === 2 ? { ...a, status: 'annullato' as const } : a))];
+    const res = recurringClients(clients, all, now);
+    expect(res.map((r) => [r.client.id, r.repeatWeeks, r.remaining])).toEqual([
+      ['c2', 2, 1], // 21/10 (il 7/10 è passato, il 4/11 è annullato)
+      ['c1', 3, 3], // 27/10, 17/11, 8/12
+    ]);
+    expect(res[1].next.start).toBe(series[1].start);
+    expect(res[1].last.start).toBe(series[3].start);
   });
 });

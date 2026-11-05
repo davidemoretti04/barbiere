@@ -3,9 +3,8 @@ import { useMemo, useState } from 'react';
 import { BackupBanner } from '../../components/BackupBanner';
 import { useFeedback } from '../../components/feedback-context';
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconPlus } from '../../components/Icons';
-import { SwipeRow } from '../../components/SwipeRow';
+import { AppointmentSwipeRow } from '../appointments/AppointmentSwipeRow';
 import { EmptyState, Page, Section, Segmented } from '../../components/ui';
-import { deleteAppointment, setAppointmentStatus } from '../../db/actions';
 import { useAppointmentsBetween, useClients, useSettings } from '../../db/hooks';
 import type { Appointment, Client } from '../../db/types';
 import { capitalize, clientName, fmt, servicesLabel, STATUS_LABEL } from '../../lib/format';
@@ -14,6 +13,7 @@ import { closureFor, nextFreeSlot, workRangesFor } from '../../lib/schedule';
 import { dayTotals } from '../../lib/stats';
 import { useAppointmentUI } from '../appointments/context';
 import { DayTimeline } from './DayTimeline';
+import { useAppointmentActions } from '../appointments/useAppointmentActions';
 
 // Ricorda giorno e vista tra un cambio di scheda e l'altro
 let lastDay: Date | null = null;
@@ -34,7 +34,8 @@ export function AgendaPage() {
   const settings = useSettings();
   const clients = useClients();
   const ui = useAppointmentUI();
-  const { confirm, toast } = useFeedback();
+  const { choose } = useFeedback();
+  const apptActions = useAppointmentActions();
 
   const weekStart = startOfWeek(day, { weekStartsOn: 1 });
   const weekEnd = addWeeks(weekStart, 1);
@@ -161,6 +162,19 @@ export function AgendaPage() {
             clients={byClient}
             onSlot={(start) => ui.openNew({ start })}
             onOpen={(id) => ui.openDetail(id)}
+            onSwipe={async (a) => {
+              const i = await choose({
+                title: 'Appuntamento',
+                options: [
+                  ...(a.status === 'programmato' ? [{ label: 'Annulla appuntamento', destructive: true }] : []),
+                  { label: 'Elimina appuntamento', destructive: true },
+                ],
+                cancelLabel: 'Indietro',
+              });
+              if (i === null) return;
+              const wantsCancel = a.status === 'programmato' && i === 0;
+              await (wantsCancel ? apptActions.cancel(a) : apptActions.remove(a));
+            }}
           />
         </>
       )}
@@ -199,18 +213,6 @@ export function AgendaPage() {
                     a={a}
                     client={byClient.get(a.clientId)}
                     onOpen={() => ui.openDetail(a.id)}
-                    onCancel={async () => {
-                      const ok = await confirm({ title: 'Annullare l’appuntamento?', confirmLabel: 'Annulla appuntamento', destructive: true, cancelLabel: 'Indietro' });
-                      if (!ok) return;
-                      const undo = await setAppointmentStatus(a.id, 'annullato');
-                      toast({ message: 'Appuntamento annullato', actionLabel: 'Annulla', onAction: () => void undo() });
-                    }}
-                    onDelete={async () => {
-                      const ok = await confirm({ title: 'Eliminare l’appuntamento?', confirmLabel: 'Elimina', destructive: true });
-                      if (!ok) return;
-                      const undo = await deleteAppointment(a.id);
-                      toast({ message: 'Appuntamento eliminato', actionLabel: 'Annulla', onAction: () => void undo() });
-                    }}
                   />
                 ))}
               </Section>
@@ -222,26 +224,10 @@ export function AgendaPage() {
   );
 }
 
-function WeekRow({
-  a,
-  client,
-  onOpen,
-  onCancel,
-  onDelete,
-}: {
-  a: Appointment;
-  client: Client | undefined;
-  onOpen: () => void;
-  onCancel: () => void;
-  onDelete: () => void;
-}) {
-  const actions = [
-    ...(a.status === 'programmato' ? [{ label: 'Annulla', color: 'orange' as const, onClick: onCancel }] : []),
-    { label: 'Elimina', color: 'red' as const, onClick: onDelete },
-  ];
+function WeekRow({ a, client, onOpen }: { a: Appointment; client: Client | undefined; onOpen: () => void }) {
   const faded = a.status === 'annullato' || a.status === 'non_presentato';
   return (
-    <SwipeRow actions={actions}>
+    <AppointmentSwipeRow appointment={a}>
       <button type="button" className="row" onClick={onOpen}>
         <span className="num" style={{ width: 48, flex: 'none', fontWeight: 600, color: faded ? 'var(--label-3)' : undefined }}>
           {fmt(a.start, 'HH:mm')}
@@ -261,6 +247,6 @@ function WeekRow({
           {a.status !== 'programmato' && <span className={`badge ${a.status}`}>{STATUS_LABEL[a.status]}</span>}
         </span>
       </button>
-    </SwipeRow>
+    </AppointmentSwipeRow>
   );
 }

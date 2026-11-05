@@ -14,7 +14,7 @@ import { findOverlaps } from '../../lib/overlap';
 import { formatPhone, normalizePhone } from '../../lib/phone';
 import { atMinutes, closureFor, fromDateKey, isWithinWorkingHours, parseHM, roundUpToSlot, toDateKey } from '../../lib/schedule';
 import { matchClient } from '../../lib/search';
-import { buildSeries, repeatLabel, REPEAT_COUNT_OPTIONS, REPEAT_WEEKS_OPTIONS, seriesIssues, suggestedRepeatWeeks } from '../../lib/recurrence';
+import { buildSeries, openEndedCount, repeatLabel, REPEAT_COUNT_OPTIONS, REPEAT_WEEKS_OPTIONS, seriesIssues, suggestedRepeatWeeks } from '../../lib/recurrence';
 import { clientStats } from '../../lib/stats';
 import type { NewAppointmentPrefill } from './context';
 
@@ -66,7 +66,9 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
   const endMs = startMs + (Number.isFinite(duration) ? duration : 0) * 60000;
   const dayAppts = useAppointmentsBetween(day.getTime(), addDays(day, 1).getTime());
   const repeating = !editing && repeatWeeks > 0;
-  const lastStart = repeating && Number.isFinite(startMs) ? addWeeks(new Date(startMs), repeatWeeks * (repeatCount - 1)).getTime() : startMs;
+  const forever = repeatCount === 0;
+  const occurrences = repeating ? (forever ? openEndedCount(repeatWeeks) : repeatCount) : 1;
+  const lastStart = repeating && Number.isFinite(startMs) ? addWeeks(new Date(startMs), repeatWeeks * (occurrences - 1)).getTime() : startMs;
   const seriesAppts = useAppointmentsBetween(
     repeating && Number.isFinite(startMs) ? startMs : 0,
     repeating && Number.isFinite(lastStart) ? lastStart + 86400000 : 0,
@@ -99,7 +101,7 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
           buildSeries(
             { id: 'nuovo', clientId: clientId ?? '', start: startMs, end: endMs, services: [], status: 'programmato', amountCents: 0, tipCents: 0, notes: '' },
             repeatWeeks,
-            repeatCount,
+            occurrences,
             (() => {
               let i = 0;
               return () => `anteprima-${i++}`;
@@ -162,7 +164,7 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
         paymentMethod: editing?.paymentMethod,
         notes: notes.trim(),
       };
-      const saved = repeating ? buildSeries(appt, repeatWeeks, repeatCount, newId, newId()) : [appt];
+      const saved = repeating ? buildSeries(appt, repeatWeeks, occurrences, newId, newId(), forever) : [appt];
       if (repeating) await saveAppointments(saved);
       else await saveAppointment(appt);
       // Calendario di Apple: iOS mostra l'evento (o tutta la serie) con «Aggiungi»
@@ -371,7 +373,9 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
           header="Ripeti"
           footer={
             repeating && Number.isFinite(startMs)
-              ? `${repeatCount} appuntamenti, ${repeatLabel(repeatWeeks).toLowerCase()}, fino a ${fmt(lastStart, 'EEEE d MMMM yyyy')}.`
+              ? forever
+                ? `${repeatLabel(repeatWeeks)}, senza fine: continua finché non lo togli (annulla o elimina «questo e i successivi»). L’app tiene sempre pronti i prossimi 6 mesi.`
+                : `${repeatCount} appuntamenti, ${repeatLabel(repeatWeeks).toLowerCase()}, fino a ${fmt(lastStart, 'EEEE d MMMM yyyy')}.`
               : 'Per i clienti abituali: crea in un colpo gli appuntamenti futuri alla stessa ora.'
           }
         >
@@ -402,6 +406,9 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
                     {c}
                   </button>
                 ))}
+                <button type="button" className="chip" aria-pressed={forever} onClick={() => setRepeatCount(0)}>
+                  ∞ Sempre
+                </button>
               </div>
             </div>
           )}
@@ -426,7 +433,7 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
         <Section
           footer={
             toCalendar
-              ? `Dopo il salvataggio iPhone mostra ${repeating ? `i ${repeatCount} eventi: tocca «Aggiungi tutti»` : 'l’evento: tocca «Aggiungi»'} per metterlo nel Calendario, con avviso 30 minuti prima.`
+              ? `Dopo il salvataggio iPhone mostra ${repeating ? (forever ? 'un evento che si ripete senza fine: tocca «Aggiungi»' : `i ${repeatCount} eventi: tocca «Aggiungi tutti»`) : 'l’evento: tocca «Aggiungi»'} per metterlo nel Calendario, con avviso 30 minuti prima.`
               : 'L’appuntamento resterà solo in questa app.'
           }
         >

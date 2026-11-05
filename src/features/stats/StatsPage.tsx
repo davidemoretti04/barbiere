@@ -164,8 +164,8 @@ export function StatsPage() {
             <Kpi onClick={open('newClients')} label="Nuovi clienti" value={String(data.kpi.newClients)} cur={data.kpi.newClients} prev={data.prev.newClients} prevLabel={PREV_LABEL[kind]} />
             <Kpi
               onClick={open('cancelled')}
-              label="Annullati / assenti"
-              value={`${data.kpi.cancelledCount} / ${data.kpi.noShowCount}`}
+              label="Annullati"
+              value={String(data.kpi.cancelledCount + data.kpi.noShowCount)}
               cur={data.kpi.cancelledCount + data.kpi.noShowCount}
               prev={data.prev.cancelledCount + data.prev.noShowCount}
               prevLabel={PREV_LABEL[kind]}

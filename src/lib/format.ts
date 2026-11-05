@@ -43,7 +43,7 @@ export const STATUS_LABEL: Record<Appointment['status'], string> = {
   programmato: 'Programmato',
   completato: 'Completato',
   annullato: 'Annullato',
-  non_presentato: 'Non presentato',
+  non_presentato: 'Annullato', // accorpato: «non presentato» vale come annullato
 };
 
 export const PAYMENT_LABEL = { contanti: 'Contanti', carta: 'Carta', altro: 'Altro' } as const;

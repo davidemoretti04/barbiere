@@ -69,9 +69,6 @@ export const IconTrash = (p: P) => (
 export const IconClock = (p: P) => (
   <svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
 );
-export const IconCake = (p: P) => (
-  <svg {...base(p)}><path d="M4 20.5h16M5 20.5v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7M5 15.5c1.5 1.3 3 1.3 4.5 0s3-1.3 4.5 0 3 1.3 5 0M12 11.5V8M12 5.5c-.8-.8-.8-1.6 0-2.5.8.9.8 1.7 0 2.5z" /></svg>
-);
 export const IconShare = (p: P) => (
   <svg {...base(p)}><path d="M12 15V3.5M8 7.5l4-4 4 4M7 10.5H5.5v10h13v-10H17" /></svg>
 );

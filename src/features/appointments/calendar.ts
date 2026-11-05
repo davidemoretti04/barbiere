@@ -14,14 +14,17 @@ export const isIOS = () =>
 export function addToCalendar(appts: Appointment | Appointment[], client: Pick<Client, 'firstName' | 'lastName' | 'phone'> | undefined) {
   const list = Array.isArray(appts) ? appts : [appts];
   if (!list.length) return;
+  // serie «Sempre»: un solo evento che il Calendario ripete senza fine
+  const events = list.length > 1 && list[0].openEnded ? [list[0]] : list;
   const ics = buildIcsCalendar(
-    list.map((a) => ({
+    events.map((a) => ({
       uid: `${a.id}@barbiere-gestionale`,
       start: a.start,
       end: a.end,
       summary: `${clientName(client)} – ${servicesLabel(a)}`,
       description: [client?.phone ? `Tel: ${client.phone}` : '', a.notes].filter(Boolean).join('\n'),
       alarmMinutesBefore: 30,
+      repeatWeeks: list.length > 1 && a.openEnded ? a.repeatWeeks : undefined,
     })),
   );
   const file = new File([ics], `appuntamento-${list[0].id.slice(0, 8)}.ics`, { type: 'text/calendar' });

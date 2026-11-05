@@ -17,6 +17,7 @@ export function DayTimeline({
   clients,
   onSlot,
   onOpen,
+  onSwipe,
 }: {
   day: Date;
   settings: Settings;
@@ -24,7 +25,10 @@ export function DayTimeline({
   clients: Map<string, Client>;
   onSlot: (start: number) => void;
   onOpen: (id: string) => void;
+  /** Scorrimento verso sinistra su un blocco (azioni Annulla/Elimina). */
+  onSwipe?: (a: Appointment) => void;
 }) {
+  const swipe = useRef<{ x: number; y: number; id: string; done: boolean } | null>(null);
   const slot = Math.max(5, Math.min(240, settings.slotMinutes || 30));
   const ranges = workRangesFor(day, settings);
   let startMin = ranges.length ? Math.min(...ranges.map((r) => parseHM(r.start))) : 9 * 60;
@@ -94,8 +98,27 @@ export function DayTimeline({
               width: `calc((100% - ${GUTTER + 4}px) / ${pos.cols} - 4px)`,
               zIndex: 2,
             }}
-            onClick={() => onOpen(a.id)}
-            aria-label={`${fmt(a.start, 'HH:mm')} ${clientName(c)}, ${servicesLabel(a)}`}
+            onClick={() => {
+              if (swipe.current?.done) {
+                swipe.current = null;
+                return;
+              }
+              onOpen(a.id);
+            }}
+            onPointerDown={(e) => {
+              swipe.current = { x: e.clientX, y: e.clientY, id: a.id, done: false };
+            }}
+            onPointerUp={(e) => {
+              const s = swipe.current;
+              if (!s || s.id !== a.id) return;
+              const dx = e.clientX - s.x;
+              const dy = e.clientY - s.y;
+              if (dx < -50 && Math.abs(dy) < 40 && onSwipe) {
+                s.done = true;
+                onSwipe(a);
+              }
+            }}
+            aria-label={`${fmt(a.start, 'HH:mm')} ${clientName(c)}, ${servicesLabel(a)}. Scorri a sinistra per annullare o eliminare`}
           >
             <strong>
               {fmt(a.start, 'HH:mm')} {clientName(c)}

@@ -15,7 +15,7 @@ import {
  * Esempio di migrazione futura:
  *   db.version(2).stores({ ... }).upgrade(tx => tx.table('clients').toCollection().modify(c => { c.email = ''; }));
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export class BarberDB extends Dexie {
   clients!: EntityTable<Client, 'id'>;
@@ -37,6 +37,8 @@ export class BarberDB extends Dexie {
     this.version(2).stores({
       appointments: 'id, start, clientId, status, [clientId+start], seriesId',
     });
+    // v3: serie «Sempre» (campo openEnded). Nessun indice nuovo, nessun dato da trasformare.
+    this.version(3).stores({});
   }
 }
 

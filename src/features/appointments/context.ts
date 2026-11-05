@@ -12,6 +12,8 @@ export interface AppointmentUI {
   openDetail: (id: string) => void;
   openEdit: (id: string) => void;
   openCheckout: (id: string) => void;
+  /** «Modifica ricorrenza» di una serie. */
+  openSeries: (seriesId: string) => void;
 }
 
 export const AppointmentUIContext = createContext<AppointmentUI>({
@@ -19,6 +21,7 @@ export const AppointmentUIContext = createContext<AppointmentUI>({
   openDetail: () => {},
   openEdit: () => {},
   openCheckout: () => {},
+  openSeries: () => {},
 });
 
 export const useAppointmentUI = () => useContext(AppointmentUIContext);

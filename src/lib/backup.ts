@@ -74,7 +74,6 @@ function validateClient(v: unknown, i: number): Client {
   req(isStr(o.firstName), 'Cliente', i, 'firstName');
   req(o.lastName === undefined || isStr(o.lastName), 'Cliente', i, 'lastName');
   req(o.phone === undefined || isStr(o.phone), 'Cliente', i, 'phone');
-  req(o.birthday === undefined || o.birthday === null || isStr(o.birthday), 'Cliente', i, 'birthday');
   req(isNum(o.createdAt), 'Cliente', i, 'createdAt');
   const c: Client = {
     id: o.id as string,
@@ -84,7 +83,6 @@ function validateClient(v: unknown, i: number): Client {
     notes: isStr(o.notes) ? o.notes : '',
     createdAt: o.createdAt as number,
   };
-  if (isStr(o.birthday) && o.birthday) c.birthday = o.birthday;
   return c;
 }
 
@@ -150,6 +148,7 @@ function validateAppointment(v: unknown, i: number): Appointment {
   req(o.repeatWeeks === undefined || (isInt(o.repeatWeeks) && o.repeatWeeks > 0), 'Appuntamento', i, 'repeatWeeks');
   if (isStr(o.seriesId) && o.seriesId) a.seriesId = o.seriesId;
   if (isInt(o.repeatWeeks)) a.repeatWeeks = o.repeatWeeks;
+  if (o.openEnded === true) a.openEnded = true;
   return a;
 }
 
@@ -186,6 +185,9 @@ export function migrateBackup(raw: Obj, fromVersion: number): Obj {
   const out = raw;
   if (fromVersion < 2) {
     // v1 → v2: aggiunti i campi facoltativi seriesId/repeatWeeks agli appuntamenti. Nulla da convertire.
+  }
+  if (fromVersion < 3) {
+    // v2 → v3: aggiunto il campo facoltativo openEnded (serie «Sempre»). Nulla da convertire.
   }
   return out;
 }
