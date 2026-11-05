@@ -49,7 +49,7 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
     editing && editing.amountCents !== sumPrice(editing.services) ? centsToInput(editing.amountCents) : null,
   );
   const [notes, setNotes] = useState(editing?.notes ?? '');
-  const [repeatWeeks, setRepeatWeeks] = useState(0);
+  const [repeatWeeks, setRepeatWeeks] = useState(editing ? 0 : (prefill?.repeatWeeks ?? 0));
   const [repeatCount, setRepeatCount] = useState(6);
   const [toCalendar, setToCalendar] = useState(true);
   const [error, setError] = useState('');

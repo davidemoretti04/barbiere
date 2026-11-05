@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { createClient, saveClient } from '../../db/actions';
 import type { Client } from '../../db/types';
 import { Sheet } from '../../components/Sheet';
-import { Field, Section } from '../../components/ui';
+import { Field, Section, Switch } from '../../components/ui';
 import { normalizePhone } from '../../lib/phone';
+import { REPEAT_WEEKS_OPTIONS, repeatLabel } from '../../lib/recurrence';
+import { useAppointmentUI } from '../appointments/context';
 
 export function ClientForm({ client, onClose, onSaved }: { client?: Client; onClose: () => void; onSaved: (c: Client) => void }) {
   const [first, setFirst] = useState(client?.firstName ?? '');
@@ -12,6 +14,9 @@ export function ClientForm({ client, onClose, onSaved }: { client?: Client; onCl
   const [birthday, setBirthday] = useState(client?.birthday ?? '');
   const [notes, setNotes] = useState(client?.notes ?? '');
   const [error, setError] = useState('');
+  const [recurring, setRecurring] = useState(false);
+  const [weeks, setWeeks] = useState(3);
+  const ui = useAppointmentUI();
 
   async function save() {
     if (!first.trim()) return setError('Scrivi almeno il nome.');
@@ -22,7 +27,10 @@ export function ClientForm({ client, onClose, onSaved }: { client?: Client; onCl
       await saveClient(c);
       onSaved(c);
     } else {
-      onSaved(await createClient(data));
+      const c = await createClient(data);
+      onSaved(c);
+      // subito dopo: modulo appuntamento con «Ripeti» già impostato
+      if (recurring) ui.openNew({ clientId: c.id, repeatWeeks: weeks });
     }
   }
 
@@ -38,7 +46,7 @@ export function ClientForm({ client, onClose, onSaved }: { client?: Client; onCl
       }
       right={
         <button type="button" className="nav-btn bold" onClick={save} disabled={!first.trim()}>
-          {client ? 'Salva' : 'Aggiungi'}
+          {client ? 'Salva' : recurring ? 'Avanti' : 'Aggiungi'}
         </button>
       }
     >
@@ -58,6 +66,32 @@ export function ClientForm({ client, onClose, onSaved }: { client?: Client; onCl
           <input type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
         </Field>
       </Section>
+      {!client && (
+        <Section
+          header="Cliente abituale"
+          footer={
+            recurring
+              ? `Dopo il salvataggio si apre il primo appuntamento con «Ripeti» già su ${repeatLabel(weeks).toLowerCase()}: scegli giorno, ora e servizio.`
+              : 'Attiva per fissare subito i suoi appuntamenti ricorrenti.'
+          }
+        >
+          <div className="field" style={{ minHeight: 50 }}>
+            <span style={{ flex: 1 }}>Appuntamenti ricorrenti</span>
+            <Switch checked={recurring} onChange={setRecurring} label="Imposta appuntamenti ricorrenti" />
+          </div>
+          {recurring && (
+            <div className="field" style={{ minHeight: 52, paddingTop: 8, paddingBottom: 8 }}>
+              <div className="chips" role="group" aria-label="Ogni quante settimane">
+                {REPEAT_WEEKS_OPTIONS.map((w) => (
+                  <button key={w} type="button" className="chip" aria-pressed={weeks === w} onClick={() => setWeeks(w)}>
+                    {w === 1 ? 'Ogni sett.' : `${w} sett.`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </Section>
+      )}
       <Section header="Note">
         <label className="field stack">
           <span className="sr-only">Note</span>

@@ -3,6 +3,8 @@ import { createContext, useContext } from 'react';
 export interface NewAppointmentPrefill {
   start?: number;
   clientId?: string;
+  /** Apre il modulo con «Ripeti» già impostato (ogni N settimane). */
+  repeatWeeks?: number;
 }
 
 export interface AppointmentUI {

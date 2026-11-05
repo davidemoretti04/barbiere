@@ -5,6 +5,10 @@ import { useNow } from '../hooks/useNow';
 import { navigate } from '../router';
 import { useFeedback } from './feedback-context';
 import { IconWarning, IconX } from './Icons';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { countSampleData } from '../lib/firstRun';
+import { SampleBanner } from './SampleBanner';
 
 export const BACKUP_REMINDER_DAYS = 14;
 export const BACKUP_SNOOZE_DAYS = 7;
@@ -18,6 +22,9 @@ export function BackupBanner() {
   const hasData = useHasData();
   const now = useNow();
   const { toast } = useFeedback();
+  const sampleCount = useLiveQuery(() => countSampleData(db), []);
+  // con i dati di esempio ha senso solo l'avviso degli esempi (non serve il backup di dati finti)
+  if (sampleCount) return <SampleBanner />;
   if (!settings || !hasData) return null;
   if ((settings.backupReminderSnoozedUntil ?? 0) > now) return null;
   const last = settings.lastBackupAt;

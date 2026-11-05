@@ -232,7 +232,7 @@ export function HomePage() {
           onClose={() => setNewClient(false)}
           onSaved={(c) => {
             setNewClient(false);
-            toast({ message: `${clientName(c)} aggiunto`, actionLabel: 'Prenota', onAction: () => ui.openNew({ clientId: c.id }) });
+            toast(`${clientName(c)} aggiunto`);
           }}
         />
       )}

@@ -20,6 +20,8 @@ import {
 import { clientsCsv, revenueCsv } from '../../lib/csv';
 import { fmt } from '../../lib/format';
 import { generateSampleData } from '../../lib/sample';
+import { countSampleData, removeSampleData } from '../../lib/firstRun';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { shareOrDownload } from '../../lib/share';
 import { navigate } from '../../router';
 
@@ -32,6 +34,7 @@ export function BackupPage() {
   const [preview, setPreview] = useState<{ backup: BackupFile; summary: BackupSummary } | null>(null);
   const [importError, setImportError] = useState('');
   const [busy, setBusy] = useState(false);
+  const sampleCount = useLiveQuery(() => countSampleData(db), []);
 
   async function exportBackup() {
     setBusy(true);
@@ -124,6 +127,19 @@ export function BackupPage() {
     toast('Dati di esempio caricati');
   }
 
+  async function clearSample() {
+    const ok = await confirm({
+      title: 'Cancellare i dati di esempio?',
+      message: 'Restano solo i dati che hai inserito tu.',
+      confirmLabel: 'Cancella dati di esempio',
+      destructive: true,
+    });
+    if (!ok) return;
+    const toSetup = await removeSampleData(db);
+    if (!toSetup) toast('Dati di esempio cancellati');
+    navigate('/home', { replace: true });
+  }
+
   async function wipe() {
     const first = await confirm({
       title: 'Cancellare tutti i dati?',
@@ -182,6 +198,7 @@ export function BackupPage() {
 
       <Section header="Prova l’app" footer="I dati di esempio sono inventati e vengono creati solo su questo telefono.">
         <Row title="Carica dati di esempio" onClick={() => void loadSample()} className="action" />
+        {sampleCount ? <Row title="Cancella solo i dati di esempio" onClick={() => void clearSample()} className="destructive" /> : null}
       </Section>
 
       <Section>

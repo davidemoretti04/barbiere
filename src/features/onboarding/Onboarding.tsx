@@ -4,7 +4,7 @@ import { IconPlus, IconX } from '../../components/Icons';
 import { Field, Section } from '../../components/ui';
 import { db } from '../../db/db';
 import { DEFAULT_SETTINGS, type Settings } from '../../db/types';
-import { importBackup, parseBackup, writeAllData } from '../../lib/backup';
+import { importBackup, parseBackup, readAllData, writeAllData } from '../../lib/backup';
 import { newId } from '../../lib/id';
 import { centsToInput, parseEuro } from '../../lib/money';
 import { generateSampleData } from '../../lib/sample';
@@ -55,7 +55,16 @@ export function Onboarding() {
 
   async function sample() {
     const ok = await confirm({ title: 'Provare con dati di esempio?', message: 'Verranno creati clienti e appuntamenti inventati. Potrai cancellarli da Altro → Backup e dati.', confirmLabel: 'Carica dati di esempio' });
-    if (ok) await writeAllData(db, generateSampleData(new Date(), { ...DEFAULT_SETTINGS, onboarded: true }));
+    if (!ok) return;
+    const sample = generateSampleData(new Date(), { ...DEFAULT_SETTINGS, onboarded: true });
+    const current = await readAllData(db);
+    await writeAllData(db, {
+      clients: [...current.clients, ...sample.clients],
+      services: [...current.services, ...sample.services],
+      appointments: [...current.appointments, ...sample.appointments],
+      expenses: [...current.expenses, ...sample.expenses],
+      settings: { ...(current.settings ?? DEFAULT_SETTINGS), onboarded: true },
+    });
   }
 
   async function restore(file: File | undefined) {

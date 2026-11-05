@@ -62,8 +62,7 @@ export function Sheet({
   useEffect(() => {
     const sheet = ref.current;
     const body = bodyRef.current;
-    const backdrop = backdropRef.current;
-    if (!sheet || !body || !backdrop) return;
+    if (!sheet || !body) return;
 
     let startY = 0;
     let startX = 0;
@@ -74,11 +73,11 @@ export function Sheet({
     let fromHeader = false;
 
     const apply = (dy: number, animate: boolean) => {
-      sheet.style.transition = animate ? 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)' : 'none';
-      backdrop.style.transition = animate ? 'background-color 0.25s' : 'none';
+      sheet.style.transition = animate ? 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.25s' : 'none';
       sheet.style.transform = dy > 0 ? `translateY(${dy}px)` : '';
       const fade = Math.max(0, 1 - dy / Math.max(1, sheet.offsetHeight));
-      backdrop.style.backgroundColor = dy > 0 ? `rgba(0, 0, 0, ${(0.3 * fade).toFixed(3)})` : '';
+      const base = window.matchMedia('(prefers-color-scheme: dark)').matches ? 0.55 : 0.3;
+      sheet.style.boxShadow = dy > 0 ? `0 0 0 100vmax rgba(0, 0, 0, ${(base * fade).toFixed(3)})` : '';
     };
 
     const finish = async (dy: number, velocity: number) => {
@@ -96,10 +95,9 @@ export function Sheet({
         if (ok) closeRef.current();
         return;
       }
-      sheet.style.transition = 'transform 0.2s ease-in';
+      sheet.style.transition = 'transform 0.2s ease-in, box-shadow 0.2s';
       sheet.style.transform = 'translateY(100%)';
-      backdrop.style.transition = 'background-color 0.2s';
-      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+      sheet.style.boxShadow = '0 0 0 100vmax rgba(0, 0, 0, 0)';
       window.setTimeout(() => closeRef.current(), 190);
     };
 

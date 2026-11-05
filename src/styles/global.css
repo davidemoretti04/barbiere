@@ -581,3 +581,16 @@ button.kpi:active { background: var(--cell-pressed); }
   background: var(--bg);
   pointer-events: none;
 }
+
+.sample-banner { background: color-mix(in srgb, var(--blue) 12%, var(--cell)); }
+.sample-banner .sample-emoji { font-size: 20px; flex: none; }
+.sample-banner b { font-weight: 600; }
+
+/* ===== Velo scuro dietro i fogli =====
+   iOS colora la barra di stato (ora, batteria) leggendo gli elementi fissi in cima allo schermo:
+   uno sfondo scuro a tutto schermo la lasciava grigia anche dopo la chiusura.
+   Lo sfondo del foglio resta trasparente (serve solo per il tocco "chiudi"); il velo è un'ombra del foglio. */
+.sheet-backdrop { background: transparent !important; animation: none !important; }
+.sheet { box-shadow: 0 0 0 100vmax var(--backdrop), var(--shadow); animation: slide-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), dim-in 0.25s ease; }
+.action-sheet { background: var(--backdrop); box-shadow: 0 0 0 100vmax var(--backdrop); padding-top: 8px; animation: slide-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), dim-in 0.25s ease; }
+@keyframes dim-in { from { box-shadow: 0 0 0 100vmax transparent; } }

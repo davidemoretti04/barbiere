@@ -56,7 +56,9 @@ Ogni volta che modifichi un file nel ramo `main`, l’app viene ricostruita e ri
 2. Tocca il pulsante **Condividi** (il quadrato con la freccia in su).
 3. Scorri e tocca **Aggiungi alla schermata Home** → **Aggiungi**.
 4. Apri l’app dall’icona con le forbici: si apre a **schermo intero**, come un’app normale.
-5. La prima volta segui la **configurazione guidata** (orari di lavoro, durata degli slot, listino).
+5. La prima volta l’app parte **con dati di esempio** (clienti e appuntamenti inventati) per provarla subito: un banner azzurro lo segnala.
+   Quando vuoi iniziare davvero tocca **Cancella** nel banner: spariscono solo i dati finti e parte la **configurazione guidata**
+   (orari di lavoro, durata degli slot, listino). I clienti che hai inserito tu restano.
 
 Dopo la prima apertura l’app funziona anche **in modalità aereo**.
 
@@ -103,6 +105,8 @@ Le schede in basso sono: **Home · Agenda · Clienti · Statistiche · Spese · 
   Scrivi il nome del cliente: se non esiste tocca **Nuovo cliente «…»** e aggiungi il telefono. Tocca i servizi
   (durata e prezzo si calcolano da soli e si possono modificare) → **Aggiungi**.
   Se l’orario si sovrappone a un altro o è fuori orario compare un avviso, ma puoi salvare comunque.
+- **Nuovo cliente abituale**: nel modulo del nuovo cliente attiva **Appuntamenti ricorrenti** e scegli ogni quante settimane:
+  dopo il salvataggio si apre il primo appuntamento con *Ripeti* già impostato.
 - **Appuntamenti ricorrenti** (clienti abituali): nel nuovo appuntamento scegli **Ripeti** (ogni 1–8 settimane) e **Quante volte**:
   vengono creati tutti gli appuntamenti alla stessa ora, con avviso se qualcuno si sovrappone o cade in un giorno di chiusura.
   La stella ★ indica l’intervallo con cui il cliente viene di solito. Annullando o eliminando un appuntamento della serie puoi scegliere
