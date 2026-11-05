@@ -573,3 +573,11 @@ button.kpi:active { background: var(--cell-pressed); }
 .sheet-grabber { box-sizing: content-box; padding: 0 30px; background-clip: content-box; }
 .banner .banner-close { color: var(--label-2); min-width: 36px; display: grid; place-items: center; margin-right: -6px; }
 .banner .banner-close svg { width: 18px; height: 18px; color: var(--label-2); }
+
+/* Striscia fissa sotto la barra di stato (ora, batteria): colore della pagina. I fogli (z-index 50) la coprono. */
+#statusbar-bg {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 45;
+  height: var(--safe-top);
+  background: var(--bg);
+  pointer-events: none;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useFeedback } from './feedback-context';
+import { useDimStatusBar } from '../hooks/useDimStatusBar';
 
 const CLOSE_DISTANCE = 110; // px trascinati oltre i quali il foglio si chiude
 const CLOSE_VELOCITY = 0.55; // px/ms: un colpo rapido verso il basso chiude anche se corto
@@ -33,6 +34,7 @@ export function Sheet({
   const bodyRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const { confirm } = useFeedback();
+  useDimStatusBar();
   const closeRef = useRef(onClose);
   const confirmRef = useRef(confirm);
   useEffect(() => {

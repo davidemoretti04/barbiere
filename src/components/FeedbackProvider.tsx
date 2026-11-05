@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { FeedbackContext, type ChooseOptions, type ToastOptions } from './feedback-context';
+import { useDimStatusBar } from '../hooks/useDimStatusBar';
 
 interface PendingChoice extends ChooseOptions {
   resolve: (v: number | null) => void;
@@ -10,6 +11,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<(ToastOptions & { key: number }) | null>(null);
   const [pending, setPending] = useState<PendingChoice | null>(null);
   const timer = useRef<number | undefined>(undefined);
+  useDimStatusBar(pending !== null);
 
   const showToast = useCallback((o: ToastOptions | string) => {
     const opts = typeof o === 'string' ? { message: o } : o;
