@@ -26,9 +26,11 @@ export function useDimStatusBar(active = true) {
   useEffect(() => {
     if (!active) return;
     openCount++;
+    document.documentElement.classList.add('sheet-open');
     return () => {
       openCount = Math.max(0, openCount - 1);
       if (openCount > 0) return;
+      document.documentElement.classList.remove('sheet-open');
       nudgeStatusBar();
       window.setTimeout(nudgeStatusBar, 350);
     };

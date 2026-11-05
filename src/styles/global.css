@@ -594,3 +594,19 @@ button.kpi:active { background: var(--cell-pressed); }
 .sheet { box-shadow: 0 0 0 100vmax var(--backdrop), var(--shadow); animation: slide-up 0.32s cubic-bezier(0.2, 0.9, 0.3, 1), dim-in 0.25s ease; }
 .action-sheet { background: var(--backdrop); box-shadow: 0 0 0 100vmax var(--backdrop); padding-top: 8px; animation: slide-up 0.28s cubic-bezier(0.2, 0.9, 0.3, 1), dim-in 0.25s ease; }
 @keyframes dim-in { from { box-shadow: 0 0 0 100vmax transparent; } }
+
+/* ===== Prestazioni su iPhone ===== */
+/* nessun ritardo sul tocco (doppio tocco per zoom disattivato) */
+html { touch-action: manipulation; }
+/* con un foglio aperto le barre sotto il velo non hanno bisogno della sfocatura, che è costosa da ridisegnare */
+.sheet-open .tabbar,
+.sheet-open .navbar.collapsed,
+.sheet-open .navbar.solid {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--bg);
+}
+/* il contenuto del foglio si ridisegna da solo, senza coinvolgere il velo a tutto schermo */
+.sheet-body { contain: content; }
+.sheet { will-change: transform; }
+.switch span, .switch span::after { will-change: transform; }

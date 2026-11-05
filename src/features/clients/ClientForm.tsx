@@ -48,6 +48,7 @@ export function ClientForm({
     <Sheet
       title={client ? 'Modifica cliente' : 'Nuovo cliente'}
       onClose={onClose}
+      tall
       dismissable={false}
       left={
         <button type="button" className="nav-btn" onClick={onClose}>
