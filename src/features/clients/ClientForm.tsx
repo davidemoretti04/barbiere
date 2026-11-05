@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createClient, DuplicateClientError, saveClient } from '../../db/actions';
 import { useClients } from '../../db/hooks';
-import { findDuplicateClient } from '../../lib/search';
+import { clientKey, findDuplicateClient } from '../../lib/search';
 import { clientName } from '../../lib/format';
 import { formatPhone } from '../../lib/phone';
 import { navigate } from '../../router';
@@ -35,7 +35,8 @@ export function ClientForm({
   const ui = useAppointmentUI();
   const clients = useClients();
   const [saving, setSaving] = useState(false);
-  const duplicate = clients ? findDuplicateClient(clients, { firstName: first, lastName: last, phone }, client?.id) : undefined;
+  const identityChanged = !client || clientKey(client) !== clientKey({ firstName: first, lastName: last, phone });
+  const duplicate = clients && identityChanged ? findDuplicateClient(clients, { firstName: first, lastName: last, phone }, client?.id) : undefined;
 
   async function save() {
     if (saving) return; // niente doppi salvataggi con il doppio tocco

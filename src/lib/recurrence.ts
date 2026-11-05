@@ -126,13 +126,16 @@ export function extendOpenSeries(
   makeId: () => string,
   horizonWeeks = OPEN_ENDED_HORIZON_WEEKS,
 ): Appointment[] {
+  // (le date si calcolano sempre dall'ultima occorrenza esistente)
   const bySeries = new Map<string, Appointment[]>();
   for (const a of appts) if (a.seriesId) bySeries.set(a.seriesId, [...(bySeries.get(a.seriesId) ?? []), a]);
   const until = addWeeks(new Date(now), horizonWeeks).getTime();
   const out: Appointment[] = [];
   for (const list of bySeries.values()) {
     const last = list.reduce((m, a) => (a.start > m.start ? a : m));
-    if (!last.openEnded || last.status === 'annullato') continue;
+    // si ferma solo se la serie non è più «Sempre» (Termina la ricorrenza / «questo e i successivi»);
+    // un singolo appuntamento annullato, anche l'ultimo, non la interrompe
+    if (!last.openEnded) continue;
     const weeks = last.repeatWeeks ?? 1;
     const duration = last.end - last.start;
     for (let k = 1; ; k++) {

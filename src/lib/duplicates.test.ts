@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createClient, DuplicateClientError, saveClient } from '../db/actions';
 import { db } from '../db/db';
 import type { Client } from '../db/types';
-import { clientKey, findDuplicateClient } from './search';
+import { clientKey, findDuplicateClient, matchClient } from './search';
 
 const c = (id: string, firstName: string, lastName: string, phone: string): Client => ({ id, firstName, lastName, phone, notes: '', createdAt: 0 });
 
@@ -23,6 +23,11 @@ describe('clienti duplicati (regola)', () => {
 
   it('senza telefono vale il confronto senza telefono', () => {
     expect(findDuplicateClient(list, { firstName: 'Luca', lastName: 'Bianchi', phone: '  ' })?.id).toBe('2');
+  });
+
+  it('la ricerca ignora gli accenti', () => {
+    expect(matchClient(c('n', 'Nicolò', 'Società', ''), 'nicolo societa')).toBe(true);
+    expect(matchClient(c('n', 'Nicolo', 'Rossi', ''), 'nicolò')).toBe(true);
   });
 
   it('in modifica ignora sé stesso; nome vuoto non è mai duplicato', () => {
@@ -54,5 +59,11 @@ describe('clienti duplicati (database)', () => {
     const first = a ?? (await createClient({ firstName: 'Anna', lastName: 'Verdi', phone: '3331112222', notes: '' }));
     await expect(saveClient({ ...b, phone: first.phone })).rejects.toBeInstanceOf(DuplicateClientError);
     await expect(saveClient({ ...b, notes: 'ok' })).resolves.toBeUndefined();
+  });
+
+  it('due clienti già doppi (dati vecchi) si possono ancora modificare', async () => {
+    const a: Client = { id: 'a', firstName: 'Anna', lastName: 'Verdi', phone: '3331112222', notes: '', createdAt: 0 };
+    await db.clients.bulkPut([a, { ...a, id: 'b' }]);
+    await expect(saveClient({ ...a, notes: 'nuova nota' })).resolves.toBeUndefined();
   });
 });

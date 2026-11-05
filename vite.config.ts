@@ -9,6 +9,8 @@ const base = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   base,
+  // L'app viene scaricata una volta e poi resta in cache per l'uso offline: ~150 kB compressi vanno bene.
+  build: { chunkSizeWarningLimit: 700 },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },

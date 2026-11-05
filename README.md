@@ -56,9 +56,10 @@ Ogni volta che modifichi un file nel ramo `main`, l’app viene ricostruita e ri
 2. Tocca il pulsante **Condividi** (il quadrato con la freccia in su).
 3. Scorri e tocca **Aggiungi alla schermata Home** → **Aggiungi**.
 4. Apri l’app dall’icona con le forbici: si apre a **schermo intero**, come un’app normale.
-5. La prima volta l’app parte **con dati di esempio** (clienti e appuntamenti inventati) per provarla subito: un banner azzurro lo segnala.
-   Quando vuoi iniziare davvero tocca **Cancella** nel banner: spariscono solo i dati finti e parte la **configurazione guidata**
-   (orari di lavoro, durata degli slot, listino). I clienti che hai inserito tu restano.
+5. La prima volta si apre la **guida** e l’app contiene già **dati di esempio** (clienti e appuntamenti inventati). Due scelte:
+   - **Configura la mia barberia**: toglie gli esempi e chiede orari di lavoro, durata degli slot e listino;
+   - **Prima provo con gli esempi**: entri subito nell’app. Quando vuoi iniziare davvero tocca **Cancella** nel banner azzurro:
+     spariscono solo i dati finti e torni alla guida. I clienti che hai inserito tu restano.
 
 Dopo la prima apertura l’app funziona anche **in modalità aereo**.
 

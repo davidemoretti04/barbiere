@@ -1,8 +1,10 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef, useState } from 'react';
 import { useFeedback } from '../../components/feedback-context';
 import { IconPlus, IconX } from '../../components/Icons';
 import { Field, Section } from '../../components/ui';
-import { db } from '../../db/db';
+import { db, updateSettings } from '../../db/db';
+import { countSampleData, removeSampleData } from '../../lib/firstRun';
 import { DEFAULT_SETTINGS, type Settings } from '../../db/types';
 import { importBackup, parseBackup, readAllData, writeAllData } from '../../lib/backup';
 import { newId } from '../../lib/id';
@@ -34,6 +36,8 @@ export function Onboarding() {
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
+  const sampleCount = useLiveQuery(() => countSampleData(db), []);
+  const [busy, setBusy] = useState(false);
 
   const go = (n: number) => {
     setError('');
@@ -74,6 +78,63 @@ export function Onboarding() {
     if (!res.ok) return toast(res.error);
     await importBackup(db, res.backup, 'replace');
     toast(`Ripristinati ${res.summary.clients} clienti e ${res.summary.appointments} appuntamenti`);
+  }
+
+  if (sampleCount === undefined) return null;
+
+  // Primo avvio: gli esempi sono già caricati, si sceglie se configurare subito o provare prima
+  if (sampleCount > 0) {
+    return (
+      <div className="page" style={{ paddingBottom: 0 }}>
+        <div className="onboarding">
+          <img src={`${import.meta.env.BASE_URL}pwa-192.png`} alt="" className="hero-icon" />
+          <div className="hero">
+            <h1>Benvenuto!</h1>
+            <p>Agenda, clienti e incassi in un’unica app. I dati restano solo su questo telefono.</p>
+          </div>
+          <Section group={false}>
+            <div className="banner sample-banner" style={{ margin: 0 }}>
+              <span className="sample-emoji" aria-hidden="true">
+                🧪
+              </span>
+              <span className="grow">
+                Per farti provare subito l’app ci sono già <b>clienti e appuntamenti di esempio</b>, tutti inventati.
+              </span>
+            </div>
+          </Section>
+          <div className="sheet-pad" style={{ display: 'grid', gap: 10 }}>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                await removeSampleData(db); // via gli esempi: si prosegue con orari e listino
+                setBusy(false);
+                go(0);
+              }}
+            >
+              Configura la mia barberia
+            </button>
+            <p className="small muted center" style={{ margin: '-2px 8px 8px' }}>
+              Toglie gli esempi e ti chiede orari di lavoro, durata degli appuntamenti e listino.
+            </p>
+            <button type="button" className="btn gray" disabled={busy} onClick={() => void updateSettings({ onboarded: true })}>
+              Prima provo con gli esempi
+            </button>
+            <p className="small muted center" style={{ margin: '-2px 8px 8px' }}>
+              Quando vuoi iniziare davvero, tocca «Cancella» nel banner azzurro: tornerai qui.
+            </p>
+          </div>
+          <Section>
+            <button type="button" className="row action" onClick={() => fileRef.current?.click()}>
+              <span className="row-main">Ho già un backup: ripristinalo</span>
+            </button>
+          </Section>
+          <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => void restore(e.target.files?.[0])} />
+        </div>
+      </div>
+    );
   }
 
   const problem = hoursProblem(settings.workingHours);

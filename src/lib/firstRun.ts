@@ -7,8 +7,8 @@ export const SAMPLE_PREFIX = 'esempio-';
 const FIRST_RUN_KEY = 'barbiere-primo-avvio';
 
 /**
- * Primo avvio su questo telefono: se il database è completamente vuoto carica i dati di esempio,
- * così l'app si può provare subito. Succede una sola volta: dopo "Cancella tutti i dati"
+ * Primo avvio su questo telefono: se il database è completamente vuoto carica i dati di esempio
+ * e apre la guida, che propone «Configura la mia barberia» o «Prima provo con gli esempi». Succede una sola volta: dopo "Cancella tutti i dati"
  * o dopo aver cancellato gli esempi si riparte dalla configurazione guidata.
  */
 export async function loadSampleOnFirstRun(database: BarberDB, storage: Pick<Storage, 'getItem' | 'setItem'>, now = new Date()): Promise<boolean> {
@@ -20,7 +20,9 @@ export async function loadSampleOnFirstRun(database: BarberDB, storage: Pick<Sto
     database.appointments.count(),
   ]);
   if (settings + clients + appointments > 0) return false; // c'è già qualcosa (es. backup ripristinato)
-  await writeAllData(database, generateSampleData(now, { ...DEFAULT_SETTINGS, onboarded: true }));
+  const sample = generateSampleData(now, { ...DEFAULT_SETTINGS, onboarded: true });
+  // gli esempi ci sono già, ma al primo avvio si apre la guida: si sceglie se configurare o provare prima
+  await writeAllData(database, { ...sample, settings: { ...DEFAULT_SETTINGS, ...sample.settings, onboarded: false } });
   return true;
 }
 

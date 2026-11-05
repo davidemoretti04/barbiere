@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../db/db';
-import { endSeriesFrom, saveAppointments, topUpOpenSeries } from '../db/actions';
+import { deleteAppointment, endSeriesFrom, saveAppointments, topUpOpenSeries } from '../db/actions';
 import type { Appointment } from '../db/types';
 import { buildSeries, extendOpenSeries, OPEN_ENDED_HORIZON_WEEKS, openEndedCount } from './recurrence';
 
@@ -40,12 +40,23 @@ describe('serie «Sempre» (funzioni pure)', () => {
     expect(extendOpenSeries([...s, ...extra], later, mk)).toHaveLength(0);
   });
 
-  it('non allunga serie a numero fisso o annullate', () => {
+  it('non allunga serie a numero fisso o terminate', () => {
     const fixed = buildSeries({ ...first, id: 'f0' }, 2, 4, mk, 'F');
     expect(extendOpenSeries(fixed, first.start + 200 * DAY, mk)).toHaveLength(0);
+    const ended = buildSeries({ ...first, id: 'e0' }, 2, 3, mk, 'E', true).map((a) => {
+      const c = { ...a };
+      delete c.openEnded; // come dopo «Termina la ricorrenza»
+      return c;
+    });
+    expect(extendOpenSeries(ended, first.start + 200 * DAY, mk)).toHaveLength(0);
+  });
+
+  it('annullare solo l’ultima data non interrompe la serie «Sempre»', () => {
     const open = buildSeries({ ...first, id: 'a0' }, 2, 3, mk, 'A', true);
     open[2] = { ...open[2], status: 'annullato' };
-    expect(extendOpenSeries(open, first.start + 200 * DAY, mk)).toHaveLength(0);
+    const extra = extendOpenSeries(open, first.start + 60 * DAY, mk);
+    expect(extra.length).toBeGreaterThan(0);
+    expect(extra.every((a) => a.status === 'programmato')).toBe(true);
   });
 });
 
@@ -78,5 +89,21 @@ describe('serie «Sempre» (database)', () => {
     const after = await db.appointments.where('seriesId').equals('DB').sortBy('start');
     expect(after.slice(2).every((a) => a.status === 'annullato')).toBe(true);
     expect(await topUpOpenSeries(first.start + 400 * DAY)).toBe(0);
+  });
+
+  it('eliminare solo l’ultima data di una serie «Sempre» non la fa ricomparire', async () => {
+    const s = buildSeries(first, 3, openEndedCount(3), mk, 'LAST', true);
+    await saveAppointments(s);
+    const last = s[s.length - 1];
+    const undo = await deleteAppointment(last.id);
+    await topUpOpenSeries(first.start);
+    const sameDate = await db.appointments.where('seriesId').equals('LAST').filter((a) => a.start === last.start).count();
+    expect(sameDate).toBe(0);
+    // la serie continua dopo la data eliminata
+    const after = await db.appointments.where('seriesId').equals('LAST').filter((a) => a.start > last.start).count();
+    expect(after).toBeGreaterThan(0);
+    // «Annulla» ripristina com'era
+    await undo();
+    expect(await db.appointments.where('seriesId').equals('LAST').filter((a) => a.start === last.start).count()).toBe(1);
   });
 });

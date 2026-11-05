@@ -1,8 +1,9 @@
+import { addWeeks } from 'date-fns';
 import { db } from './db';
 import type { Appointment, Client, Expense, Service } from './types';
 import { newId } from '../lib/id';
 import { extendOpenSeries } from '../lib/recurrence';
-import { findDuplicateClient } from '../lib/search';
+import { clientKey, findDuplicateClient } from '../lib/search';
 
 /** Esiste già un cliente con stesso nome, cognome e telefono. */
 export class DuplicateClientError extends Error {
@@ -25,7 +26,11 @@ export async function createClient(data: Omit<Client, 'id' | 'createdAt'>): Prom
 /** Salva le modifiche; se diventerebbe identico a un altro cliente lancia DuplicateClientError. */
 export async function saveClient(c: Client): Promise<void> {
   await db.transaction('rw', db.clients, async () => {
-    const existing = findDuplicateClient(await db.clients.toArray(), c, c.id);
+    const before = await db.clients.get(c.id);
+    // si blocca solo se la modifica rende il cliente uguale a un altro: chi era già doppio
+    // (dati di prima del controllo) può comunque cambiare note e altri dettagli
+    const identityChanged = !before || clientKey(before) !== clientKey(c);
+    const existing = identityChanged ? findDuplicateClient(await db.clients.toArray(), c, c.id) : undefined;
     if (existing) throw new DuplicateClientError(existing);
     await db.clients.put({ ...c });
   });
@@ -83,9 +88,26 @@ export async function deleteMany(ids: string[]): Promise<() => Promise<void>> {
 
 export async function deleteAppointment(id: string): Promise<() => Promise<void>> {
   const a = await db.appointments.get(id);
-  await db.appointments.delete(id);
+  let added: Appointment | null = null;
+  await db.transaction('rw', db.appointments, async () => {
+    await db.appointments.delete(id);
+    // Serie «Sempre»: se era l'ultima data, si aggiunge subito la successiva, altrimenti
+    // all'apertura successiva l'app ricreerebbe proprio la data eliminata.
+    if (a?.seriesId && a.openEnded) {
+      const rest = await db.appointments.where('seriesId').equals(a.seriesId).toArray();
+      if (!rest.some((x) => x.start > a.start)) {
+        const start = addWeeks(new Date(a.start), a.repeatWeeks ?? 1).getTime();
+        added = { ...a, id: newId(), start, end: start + (a.end - a.start), status: 'programmato', tipCents: 0 };
+        delete added.paymentMethod;
+        await db.appointments.put(added);
+      }
+    }
+  });
   return async () => {
-    if (a) await db.appointments.put(a);
+    await db.transaction('rw', db.appointments, async () => {
+      if (added) await db.appointments.delete(added.id);
+      if (a) await db.appointments.put(a);
+    });
   };
 }
 

@@ -24,7 +24,8 @@ describe('dati di esempio al primo avvio', () => {
     const storage = memoryStorage();
     expect(await loadSampleOnFirstRun(db, storage, new Date(2026, 10, 5))).toBe(true);
     expect(await countSampleData(db)).toBeGreaterThan(100);
-    expect((await db.settings.get('app'))?.onboarded).toBe(true);
+    // la guida si apre comunque al primo avvio
+    expect((await db.settings.get('app'))?.onboarded).toBe(false);
     // secondo avvio: non ricarica
     expect(await loadSampleOnFirstRun(db, storage)).toBe(false);
   });
@@ -71,6 +72,7 @@ describe('dati di esempio al primo avvio', () => {
   it('se c’è un listino vero resta nell’app', async () => {
     const db = fresh();
     await loadSampleOnFirstRun(db, memoryStorage());
+    await db.settings.update('app', { onboarded: true }); // «Prima provo con gli esempi»
     await db.services.add({ id: 'mio', name: 'Taglio', priceCents: 2000, durationMinutes: 30, active: true });
     expect(await removeSampleData(db)).toBe(false);
     expect((await db.services.toArray()).map((s) => s.id)).toEqual(['mio']);
