@@ -22,7 +22,7 @@ const FIRST = ['Marco', 'Luca', 'Giovanni', 'Andrea', 'Matteo', 'Paolo', 'Davide
 const LAST = ['Rossi', 'Bianchi', 'Esposito', 'Romano', 'Colombo', 'Ricci', 'Marino', 'Greco', 'Bruno', 'Gallo', 'Conti', 'De Luca', 'Mancini', 'Costa', 'Giordano', 'Rizzo', 'Lombardi', 'Moretti', 'Barbieri', 'Fontana', 'Santoro', 'Mariani', 'Rinaldi', 'Caruso', 'Ferrara', 'Galli', 'Martini', 'Leone'];
 
 /** Da incrementare a ogni modifica degli esempi: al prossimo avvio vengono sostituiti da soli. */
-export const SAMPLE_VERSION = 2;
+export const SAMPLE_VERSION = 3;
 
 /** Chiusura di esempio (ferie): id con il prefisso degli esempi, così si cancella insieme a loro. */
 export const SAMPLE_CLOSURE_ID = 'esempio-ferie';
@@ -163,6 +163,14 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
     forgotten.status = 'programmato';
     forgotten.tipCents = 0;
     delete forgotten.paymentMethod;
+  }
+
+  // un cliente già eliminato: sparisce dagli elenchi ma i suoi appuntamenti fatti restano nello storico
+  const gone = clients[clients.length - 1];
+  gone.deletedAt = addDays(today, -2).getTime();
+  for (let x = appointments.length - 1; x >= 0; x--) {
+    const a = appointments[x];
+    if (a.clientId === gone.id && (a.status === 'programmato' || a.start >= gone.deletedAt)) appointments.splice(x, 1);
   }
 
   // il cliente "esiste" dalla sua prima visita

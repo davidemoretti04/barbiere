@@ -39,7 +39,10 @@ export function clientKey(c: Pick<Client, 'firstName' | 'lastName' | 'phone'>): 
   return `${norm(c.firstName)}|${norm(c.lastName)}|${normPhone(c.phone)}`;
 }
 
-/** Cliente già presente con gli stessi dati (escluso quello in modifica). */
+/** Cliente attivo (non eliminato). */
+export const isActiveClient = (c: Pick<Client, 'deletedAt'>) => !c.deletedAt;
+
+/** Cliente già presente con gli stessi dati (escluso quello in modifica e quelli eliminati). */
 export function findDuplicateClient(
   clients: Client[],
   data: Pick<Client, 'firstName' | 'lastName' | 'phone'>,
@@ -47,5 +50,5 @@ export function findDuplicateClient(
 ): Client | undefined {
   if (!norm(data.firstName)) return undefined;
   const key = clientKey(data);
-  return clients.find((c) => c.id !== excludeId && clientKey(c) === key);
+  return clients.find((c) => c.id !== excludeId && isActiveClient(c) && clientKey(c) === key);
 }

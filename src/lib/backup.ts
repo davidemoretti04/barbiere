@@ -83,6 +83,7 @@ function validateClient(v: unknown, i: number): Client {
     notes: isStr(o.notes) ? o.notes : '',
     createdAt: o.createdAt as number,
   };
+  if (isNum(o.deletedAt)) c.deletedAt = o.deletedAt;
   return c;
 }
 

@@ -8,7 +8,7 @@ import { useAllAppointments, useClients, useSettings } from '../../db/hooks';
 import type { Client } from '../../db/types';
 import { clientName, fmt, initials } from '../../lib/format';
 import { formatPhone, whatsappLink } from '../../lib/phone';
-import { matchClient } from '../../lib/search';
+import { isActiveClient, matchClient } from '../../lib/search';
 import { inactiveClients } from '../../lib/stats';
 import { recurringClients, repeatLabel } from '../../lib/recurrence';
 import { navigate } from '../../router';
@@ -20,7 +20,8 @@ type Tab = 'tutti' | 'ricontattare' | 'ricorrenti';
 let lastTab: Tab = 'tutti';
 
 export function ClientsPage() {
-  const clients = useClients();
+  const allClients = useClients();
+  const clients = useMemo(() => allClients?.filter(isActiveClient), [allClients]);
   const appts = useAllAppointments();
   const settings = useSettings();
   const { confirm, toast } = useFeedback();
@@ -66,7 +67,9 @@ export function ClientsPage() {
     const n = visitCount.get(c.id) ?? 0;
     const ok = await confirm({
       title: `Eliminare ${clientName(c)}?`,
-      message: n ? `Verranno eliminati anche ${n} appuntamenti e le statistiche cambieranno.` : undefined,
+      message: n
+        ? 'Verranno eliminati i suoi appuntamenti futuri. Quelli già fatti restano nello storico e nelle statistiche.'
+        : undefined,
       confirmLabel: 'Elimina cliente',
       destructive: true,
     });

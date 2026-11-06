@@ -14,7 +14,7 @@ import { centsToInput, formatEuro, parseEuro } from '../../lib/money';
 import { findOverlaps } from '../../lib/overlap';
 import { formatPhone, normalizePhone } from '../../lib/phone';
 import { atMinutes, closureFor, fromDateKey, isWithinWorkingHours, parseHM, roundUpToSlot, toDateKey } from '../../lib/schedule';
-import { matchClient } from '../../lib/search';
+import { isActiveClient, matchClient } from '../../lib/search';
 import { buildSeries, openEndedCount, repeatLabel, REPEAT_COUNT_OPTIONS, REPEAT_WEEKS_OPTIONS, seriesIssues, suggestedRepeatWeeks } from '../../lib/recurrence';
 import { clientStats } from '../../lib/stats';
 import type { NewAppointmentPrefill } from './context';
@@ -112,9 +112,10 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
 
   const results = useMemo(() => {
     if (!clients) return [];
+    const active = clients.filter(isActiveClient);
     const list = query.trim()
-      ? clients.filter((c) => matchClient(c, query)).sort((a, b) => clientName(a).localeCompare(clientName(b), 'it'))
-      : [...clients].sort((a, b) => b.createdAt - a.createdAt);
+      ? active.filter((c) => matchClient(c, query)).sort((a, b) => clientName(a).localeCompare(clientName(b), 'it'))
+      : [...active].sort((a, b) => b.createdAt - a.createdAt);
     return list.slice(0, 6);
   }, [clients, query]);
 

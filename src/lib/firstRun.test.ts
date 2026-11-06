@@ -92,6 +92,11 @@ describe('dati di esempio al primo avvio', () => {
     expect(appts.some((a) => a.services.some((s) => s.name === 'Shampoo e piega'))).toBe(false);
     expect((await db.settings.get('app'))?.closures.some((c) => c.id === SAMPLE_CLOSURE_ID)).toBe(true);
     expect(appts.some((a) => a.openEnded)).toBe(true);
+    // un cliente eliminato con storico ancora presente
+    const gone = (await db.clients.toArray()).find((c) => c.deletedAt);
+    expect(gone).toBeTruthy();
+    expect(appts.some((a) => a.clientId === gone!.id && a.status === 'completato')).toBe(true);
+    expect(appts.some((a) => a.clientId === gone!.id && a.status === 'programmato')).toBe(false);
   });
 
   it('versione nuova degli esempi: si sostituiscono da soli, i dati veri restano', async () => {

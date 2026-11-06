@@ -9,6 +9,11 @@ export interface Client {
   notes: string;
   /** Epoch in millisecondi. */
   createdAt: number;
+  /**
+   * Cliente eliminato (epoch ms): sparisce da elenchi e ricerche ma resta per lo storico,
+   * così gli appuntamenti già fatti mantengono nome e statistiche.
+   */
+  deletedAt?: number;
 }
 
 export interface Service {

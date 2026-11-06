@@ -42,7 +42,7 @@ export function clientsCsv(clients: Client[], appts: Appointment[]): string {
     g.total += a.amountCents + a.tipCents;
     agg.set(a.clientId, g);
   }
-  for (const c of [...clients].sort((a, b) => clientName(a).localeCompare(clientName(b), 'it'))) {
+  for (const c of clients.filter((x) => !x.deletedAt).sort((a, b) => clientName(a).localeCompare(clientName(b), 'it'))) {
     const g = agg.get(c.id) ?? { visits: 0, total: 0 };
     rows.push([c.firstName, c.lastName, c.phone, g.visits, euro(g.total), c.notes]);
   }

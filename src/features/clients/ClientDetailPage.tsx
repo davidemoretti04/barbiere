@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useFeedback } from '../../components/feedback-context';
 import { IconCalendarPlus, IconChat, IconPhone } from '../../components/Icons';
 import { BackButton, EmptyState, Page, Row, Section } from '../../components/ui';
-import { deleteClient } from '../../db/actions';
+import { deleteClient, restoreClient } from '../../db/actions';
+import { IconWarning } from '../../components/Icons';
 import { useClient, useClientAppointments } from '../../db/hooks';
 import { clientName, fmt, initials, servicesLabel, STATUS_LABEL } from '../../lib/format';
 import { formatEuro } from '../../lib/money';
@@ -44,7 +45,7 @@ export function ClientDetailPage({ id }: { id: string }) {
   async function remove() {
     const ok = await confirm({
       title: `Eliminare ${clientName(client ?? undefined)}?`,
-      message: s.visits || appts?.length ? `Verranno eliminati anche i suoi ${appts?.length} appuntamenti.` : undefined,
+      message: 'Sparisce dall’elenco clienti e i suoi appuntamenti futuri vengono eliminati. Quelli già fatti restano nello storico e nelle statistiche.',
       confirmLabel: 'Elimina cliente',
       destructive: true,
     });
@@ -60,11 +61,28 @@ export function ClientDetailPage({ id }: { id: string }) {
       left={back}
       largeTitle={false}
       right={
-        <button type="button" className="nav-btn" onClick={() => setEditing(true)}>
-          Modifica
-        </button>
+        client.deletedAt ? undefined : (
+          <button type="button" className="nav-btn" onClick={() => setEditing(true)}>
+            Modifica
+          </button>
+        )
       }
     >
+      {client.deletedAt && (
+        <div className="banner" role="status" style={{ marginTop: 8 }}>
+          <IconWarning />
+          <span className="grow">Cliente eliminato il {fmt(client.deletedAt, 'd MMMM yyyy')}. Lo storico resta visibile.</span>
+          <button
+            type="button"
+            onClick={async () => {
+              await restoreClient(id);
+              toast('Cliente ripristinato');
+            }}
+          >
+            Ripristina
+          </button>
+        </div>
+      )}
       <div className="hero" style={{ paddingTop: 8 }}>
         <div className="avatar lg" aria-hidden="true">
           {initials(client)}
@@ -175,11 +193,13 @@ export function ClientDetailPage({ id }: { id: string }) {
         ))}
       </Section>
 
-      <Section>
-        <button type="button" className="row destructive" onClick={remove}>
-          Elimina cliente
-        </button>
-      </Section>
+      {!client.deletedAt && (
+        <Section footer="I suoi appuntamenti già fatti restano nello storico e nelle statistiche.">
+          <button type="button" className="row destructive" onClick={remove}>
+            Elimina cliente
+          </button>
+        </Section>
+      )}
 
       {editing && (
         <ClientForm

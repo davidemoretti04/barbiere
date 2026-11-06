@@ -60,7 +60,7 @@ export function HomePage() {
       month: k(toNow(month)),
       prevMonth: k(prevMonth),
       last7: dailyCollected(appts, 7, now),
-      inactive: inactiveClients(clients, appts, settings.inactiveWeeks, now).length,
+      inactive: inactiveClients(clients.filter((c) => !c.deletedAt), appts, settings.inactiveWeeks, now).length,
     };
   }, [appts, clients, settings, now]);
 

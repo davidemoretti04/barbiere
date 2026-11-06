@@ -9,7 +9,7 @@ import { useFeedback } from '../../components/feedback-context';
 import { IconCalendarPlus, IconChat, IconCheck, IconPencil, IconPhone, IconSms } from '../../components/Icons';
 import { Sheet } from '../../components/Sheet';
 import { Row, Section } from '../../components/ui';
-import { capitalize, clientName, durationLabel, fmt, PAYMENT_LABEL, reminderText, STATUS_LABEL } from '../../lib/format';
+import { capitalize, clientName, durationLabel, fmt, initials, PAYMENT_LABEL, reminderText, STATUS_LABEL } from '../../lib/format';
 import { formatEuro } from '../../lib/money';
 import { smsLink, telLink, whatsappLink } from '../../lib/phone';
 import { DEFAULT_SETTINGS } from '../../db/types';
@@ -88,6 +88,27 @@ export function AppointmentDetail({
           )}
         </p>
       </div>
+
+      {/* accesso esplicito alla scheda del cliente */}
+      {client && (
+        <Section>
+          <Row
+            onClick={() => {
+              onClose();
+              navigate(`/clienti/${client.id}`);
+            }}
+            leading={
+              <span className="avatar" aria-hidden="true" style={{ width: 36, height: 36, fontSize: 14 }}>
+                {initials(client)}
+              </span>
+            }
+            title={clientName(client)}
+            sub={<span style={{ color: 'var(--accent)' }}>Apri scheda cliente</span>}
+            chevron
+            ariaLabel={`Apri la scheda di ${clientName(client)}`}
+          />
+        </Section>
+      )}
 
       <div className="sheet-pad" style={{ marginBottom: 16, display: 'grid', gap: 10 }}>
         {a.status === 'programmato' && (

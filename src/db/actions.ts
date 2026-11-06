@@ -37,19 +37,37 @@ export async function saveClient(c: Client): Promise<void> {
 }
 
 /** Elimina un cliente e i suoi appuntamenti; ritorna una funzione per annullare. */
-export async function deleteClient(id: string): Promise<() => Promise<void>> {
+/** Appuntamenti che si eliminano insieme al cliente: quelli ancora da fare (futuri o in sospeso). */
+export const removedWithClient = (a: Appointment, now: number) => a.status === 'programmato' || a.start >= now;
+
+/**
+ * Elimina un cliente: spariscono lui (da elenchi e ricerche) e i suoi appuntamenti ancora da fare;
+ * quelli già fatti o passati restano nello storico e nelle statistiche, con il suo nome.
+ * Ritorna una funzione per annullare.
+ */
+export async function deleteClient(id: string, now: number = Date.now()): Promise<() => Promise<void>> {
   const client = await db.clients.get(id);
   const appts = await db.appointments.where('clientId').equals(id).toArray();
+  const toRemove = appts.filter((a) => removedWithClient(a, now)).map((a) => a.id);
   await db.transaction('rw', db.clients, db.appointments, async () => {
-    await db.appointments.where('clientId').equals(id).delete();
-    await db.clients.delete(id);
+    await db.appointments.bulkDelete(toRemove);
+    if (client) await db.clients.put({ ...client, deletedAt: now });
   });
   return async () => {
     await db.transaction('rw', db.clients, db.appointments, async () => {
       if (client) await db.clients.put(client);
-      await db.appointments.bulkPut(appts);
+      await db.appointments.bulkPut(appts.filter((a) => toRemove.includes(a.id)));
     });
   };
+}
+
+/** Riporta un cliente eliminato negli elenchi (gli appuntamenti futuri eliminati non tornano). */
+export async function restoreClient(id: string): Promise<void> {
+  const c = await db.clients.get(id);
+  if (!c) return;
+  const copy = { ...c };
+  delete copy.deletedAt;
+  await db.clients.put(copy);
 }
 
 export async function saveAppointment(a: Appointment): Promise<void> {
