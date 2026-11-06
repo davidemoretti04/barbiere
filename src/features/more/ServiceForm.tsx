@@ -8,7 +8,18 @@ import { centsToInput, parseEuro } from '../../lib/money';
 
 const DURATION_PRESETS = [15, 20, 30, 45, 60];
 
-export function ServiceForm({ service, onClose, onSaved }: { service?: Service; onClose: () => void; onSaved: (s: Service) => void }) {
+export function ServiceForm({
+  service,
+  onClose,
+  onSaved,
+  onDelete,
+}: {
+  service?: Service;
+  onClose: () => void;
+  onSaved: (s: Service) => void;
+  /** Solo in modifica: elimina il servizio dal listino. */
+  onDelete?: () => void;
+}) {
   const [name, setName] = useState(service?.name ?? '');
   const [price, setPrice] = useState(service ? centsToInput(service.priceCents) : '');
   const [duration, setDuration] = useState(String(service?.durationMinutes ?? 30));
@@ -71,6 +82,13 @@ export function ServiceForm({ service, onClose, onSaved }: { service?: Service; 
         <div className="field-error" role="alert">
           {error}
         </div>
+      )}
+      {onDelete && (
+        <Section footer="Gli appuntamenti già fatti o fissati con questo servizio restano come sono.">
+          <button type="button" className="row destructive" onClick={onDelete}>
+            Elimina servizio
+          </button>
+        </Section>
       )}
     </Sheet>
   );

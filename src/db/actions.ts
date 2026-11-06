@@ -134,6 +134,18 @@ export async function saveService(s: Service): Promise<void> {
   await db.services.put(s);
 }
 
+/**
+ * Elimina un servizio dal listino. Gli appuntamenti conservano la propria copia di nome e prezzo,
+ * quindi storico e statistiche non cambiano. Ritorna una funzione per annullare.
+ */
+export async function deleteService(id: string): Promise<() => Promise<void>> {
+  const s = await db.services.get(id);
+  await db.services.delete(id);
+  return async () => {
+    if (s) await db.services.put(s);
+  };
+}
+
 export async function saveExpense(e: Expense): Promise<void> {
   await db.expenses.put(e);
 }
