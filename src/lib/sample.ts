@@ -1,6 +1,7 @@
 /**
  * Dati di esempio COMPLETAMENTE FINTI (nomi inventati, numeri 333 000 xxxx non reali).
- * Vengono generati sul telefono solo quando l'utente lo chiede da "Backup e dati".
+ * Servono a provare l'app: quando una nuova versione cambia gli esempi si incrementa SAMPLE_VERSION
+ * e chi ha ancora gli esempi sul telefono li riceve aggiornati da solo (i dati veri non si toccano).
  */
 import { addDays, addWeeks, startOfDay } from 'date-fns';
 import { DEFAULT_SETTINGS, type Appointment, type Client, type Expense, type Service, type Settings } from '../db/types';
@@ -20,12 +21,20 @@ function rng(seed: number) {
 const FIRST = ['Marco', 'Luca', 'Giovanni', 'Andrea', 'Matteo', 'Paolo', 'Davide', 'Simone', 'Fabio', 'Alessio', 'Stefano', 'Riccardo', 'Lorenzo', 'Tommaso', 'Nicola', 'Pietro', 'Federico', 'Gabriele', 'Emanuele', 'Daniele', 'Antonio', 'Francesco', 'Roberto', 'Michele', 'Enrico', 'Sergio', 'Claudio', 'Filippo'];
 const LAST = ['Rossi', 'Bianchi', 'Esposito', 'Romano', 'Colombo', 'Ricci', 'Marino', 'Greco', 'Bruno', 'Gallo', 'Conti', 'De Luca', 'Mancini', 'Costa', 'Giordano', 'Rizzo', 'Lombardi', 'Moretti', 'Barbieri', 'Fontana', 'Santoro', 'Mariani', 'Rinaldi', 'Caruso', 'Ferrara', 'Galli', 'Martini', 'Leone'];
 
+/** Da incrementare a ogni modifica degli esempi: al prossimo avvio vengono sostituiti da soli. */
+export const SAMPLE_VERSION = 2;
+
+/** Chiusura di esempio (ferie): id con il prefisso degli esempi, così si cancella insieme a loro. */
+export const SAMPLE_CLOSURE_ID = 'esempio-ferie';
+
 export const SAMPLE_SERVICES: Omit<Service, 'id'>[] = [
   { name: 'Taglio', priceCents: 1800, durationMinutes: 30, active: true },
   { name: 'Barba', priceCents: 1000, durationMinutes: 20, active: true },
   { name: 'Taglio + barba', priceCents: 2500, durationMinutes: 45, active: true },
   { name: 'Rasatura classica', priceCents: 1500, durationMinutes: 30, active: true },
   { name: 'Taglio bambino', priceCents: 1300, durationMinutes: 20, active: true },
+  // archiviato: per provare «Archiviati» nel listino (non viene usato nei nuovi appuntamenti)
+  { name: 'Shampoo e piega', priceCents: 1200, durationMinutes: 20, active: false },
 ];
 
 export function generateSampleData(now: Date = new Date(), settings: Settings = { ...DEFAULT_SETTINGS, onboarded: true }): BackupData {
@@ -35,7 +44,7 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
   const id = (p: string, n: number) => `esempio-${p}-${n}`;
 
   const services: Service[] = SAMPLE_SERVICES.map((s, i) => ({ ...s, id: id('servizio', i) }));
-  const weights = [0.42, 0.12, 0.3, 0.08, 0.08];
+  const weights = [0.42, 0.12, 0.3, 0.08, 0.08, 0];
   const pickService = () => {
     const r = rand();
     let acc = 0;
@@ -81,12 +90,13 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
           const start = atMinutes(day, m);
           const past = start.getTime() < now.getTime();
           const roll = rand();
+          const recent = d >= -6; // ultima settimana
           const status: Appointment['status'] = !past
             ? 'programmato'
-            : roll < 0.06
+            : roll < 0.08
               ? 'annullato'
-              : roll < 0.09
-                ? 'annullato'
+              : recent && roll < 0.14
+                ? 'programmato' // «da incassare» in Home
                 : 'completato';
           const extra = status === 'completato' && rand() < 0.1 ? 300 : 0;
           appointments.push({
@@ -147,6 +157,14 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
   });
 
   for (const a of appointments) if (a.paymentMethod === undefined) delete a.paymentMethod;
+  // uno vecchio dimenticato da incassare (resta in Home finché non lo si segna)
+  const forgotten = appointments.filter((a) => a.status === 'completato' && a.start < addDays(today, -40).getTime())[0];
+  if (forgotten) {
+    forgotten.status = 'programmato';
+    forgotten.tipCents = 0;
+    delete forgotten.paymentMethod;
+  }
+
   // il cliente "esiste" dalla sua prima visita
   for (const c of clients) {
     const first = appointments.filter((a) => a.clientId === c.id).reduce((m, a) => Math.min(m, a.start), Infinity);
@@ -166,5 +184,12 @@ export function generateSampleData(now: Date = new Date(), settings: Settings = 
     }
   }
 
-  return { clients, services, appointments, expenses, settings: { ...settings, onboarded: true } };
+  // ferie di esempio tra circa tre settimane (per provare chiusure e avvisi nell'agenda)
+  const holidayStart = addDays(today, 21);
+  const closures = [
+    ...settings.closures.filter((c) => c.id !== SAMPLE_CLOSURE_ID),
+    { id: SAMPLE_CLOSURE_ID, from: toDateKey(holidayStart), to: toDateKey(addDays(holidayStart, 2)), label: 'Ferie (esempio)' },
+  ];
+
+  return { clients, services, appointments, expenses, settings: { ...settings, closures, onboarded: true } };
 }

@@ -20,7 +20,7 @@ import {
 import { clientsCsv, revenueCsv } from '../../lib/csv';
 import { fmt } from '../../lib/format';
 import { generateSampleData } from '../../lib/sample';
-import { countSampleData, removeSampleData } from '../../lib/firstRun';
+import { countSampleData, refreshSampleData, removeSampleData } from '../../lib/firstRun';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { shareOrDownload } from '../../lib/share';
 import { navigate } from '../../router';
@@ -127,6 +127,17 @@ export function BackupPage() {
     toast('Dati di esempio caricati');
   }
 
+  async function updateSample() {
+    const ok = await confirm({
+      title: 'Aggiornare i dati di esempio?',
+      message: 'Gli esempi vengono sostituiti con quelli più recenti (le modifiche fatte sugli esempi si perdono). I tuoi dati veri non si toccano.',
+      confirmLabel: 'Aggiorna esempi',
+    });
+    if (!ok) return;
+    await refreshSampleData(db, localStorage, new Date(), true);
+    toast('Dati di esempio aggiornati');
+  }
+
   async function clearSample() {
     const ok = await confirm({
       title: 'Cancellare i dati di esempio?',
@@ -198,6 +209,7 @@ export function BackupPage() {
 
       <Section header="Prova l’app" footer="I dati di esempio sono inventati e vengono creati solo su questo telefono.">
         <Row title="Carica dati di esempio" onClick={() => void loadSample()} className="action" />
+        {sampleCount ? <Row title="Aggiorna i dati di esempio" onClick={() => void updateSample()} className="action" /> : null}
         {sampleCount ? <Row title="Cancella solo i dati di esempio" onClick={() => void clearSample()} className="destructive" /> : null}
       </Section>
 

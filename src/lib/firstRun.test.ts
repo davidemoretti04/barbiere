@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BarberDB } from '../db/db';
-import { countSampleData, loadSampleOnFirstRun, removeSampleData } from './firstRun';
+import { countSampleData, loadSampleOnFirstRun, refreshSampleData, removeSampleData } from './firstRun';
+import { SAMPLE_CLOSURE_ID } from './sample';
 
 const dbs: BarberDB[] = [];
 let n = 0;
@@ -77,5 +78,50 @@ describe('dati di esempio al primo avvio', () => {
     expect(await removeSampleData(db)).toBe(false);
     expect((await db.services.toArray()).map((s) => s.id)).toEqual(['mio']);
     expect((await db.settings.get('app'))?.onboarded).toBe(true);
+  });
+
+  it('gli esempi contengono da incassare, un servizio archiviato, ferie e ricorrenti', async () => {
+    const db = fresh();
+    const now = new Date(2026, 10, 6, 20);
+    await loadSampleOnFirstRun(db, memoryStorage(), now);
+    const appts = await db.appointments.toArray();
+    const pending = appts.filter((a) => a.status === 'programmato' && a.end <= now.getTime());
+    expect(pending.length).toBeGreaterThan(2);
+    expect(pending.some((a) => a.start < now.getTime() - 30 * 86400000)).toBe(true);
+    expect((await db.services.toArray()).some((s) => !s.active)).toBe(true);
+    expect(appts.some((a) => a.services.some((s) => s.name === 'Shampoo e piega'))).toBe(false);
+    expect((await db.settings.get('app'))?.closures.some((c) => c.id === SAMPLE_CLOSURE_ID)).toBe(true);
+    expect(appts.some((a) => a.openEnded)).toBe(true);
+  });
+
+  it('versione nuova degli esempi: si sostituiscono da soli, i dati veri restano', async () => {
+    const db = fresh();
+    const storage = memoryStorage();
+    await loadSampleOnFirstRun(db, storage);
+    await db.settings.update('app', { onboarded: true, slotMinutes: 15 });
+    await db.clients.add({ id: 'vero', firstName: 'Mario', lastName: 'Bianchi', phone: '', notes: '', createdAt: 0 });
+    // stessa versione: non fa niente
+    expect(await refreshSampleData(db, storage)).toBe(false);
+    // versione vecchia salvata sul telefono → aggiornamento
+    storage.setItem('barbiere-versione-esempi', '1');
+    await db.clients.update('esempio-cliente-0', { notes: 'modificato durante la prova' });
+    expect(await refreshSampleData(db, storage)).toBe(true);
+    expect((await db.clients.get('esempio-cliente-0'))?.notes).not.toBe('modificato durante la prova');
+    expect(await db.clients.get('vero')).toBeTruthy();
+    const s = await db.settings.get('app');
+    expect([s?.onboarded, s?.slotMinutes]).toEqual([true, 15]);
+    expect(s?.closures.filter((c) => c.id === SAMPLE_CLOSURE_ID)).toHaveLength(1);
+    // cancellando gli esempi sparisce anche la chiusura di esempio
+    await removeSampleData(db);
+    expect((await db.settings.get('app'))?.closures.some((c) => c.id === SAMPLE_CLOSURE_ID)).toBe(false);
+  });
+
+  it('senza esempi sul telefono l’aggiornamento non aggiunge nulla', async () => {
+    const db = fresh();
+    const storage = memoryStorage();
+    storage.setItem('barbiere-versione-esempi', '1');
+    await db.clients.add({ id: 'vero', firstName: 'Mario', lastName: '', phone: '', notes: '', createdAt: 0 });
+    expect(await refreshSampleData(db, storage)).toBe(false);
+    expect(await countSampleData(db)).toBe(0);
   });
 });

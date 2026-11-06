@@ -4,7 +4,7 @@ import { App } from './App';
 import { FeedbackProvider } from './components/FeedbackProvider';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { db, requestPersistentStorage } from './db/db';
-import { loadSampleOnFirstRun } from './lib/firstRun';
+import { loadSampleOnFirstRun, refreshSampleData } from './lib/firstRun';
 import { topUpOpenSeries } from './db/actions';
 import './styles/global.css';
 
@@ -26,5 +26,7 @@ function render() {
 // Serie «Sempre»: a ogni apertura si aggiungono le date future mancanti (sempre 6 mesi pronti).
 loadSampleOnFirstRun(db, localStorage)
   .catch(() => false)
+  // esempi ancora presenti ma di una versione vecchia: si aggiornano da soli
+  .then(() => refreshSampleData(db, localStorage).catch(() => false))
   .then(() => topUpOpenSeries().catch(() => 0))
   .finally(render);

@@ -92,6 +92,8 @@ si perdono — **a meno che tu non abbia un backup**. L’app ti avvisa con un b
 I file si aprono con Excel o Numbers.
 
 **Per provare l’app**: **Carica dati di esempio** crea clienti e appuntamenti inventati.
+Gli esempi si aggiornano da soli quando una nuova versione dell’app li cambia (i dati veri restano);
+**Aggiorna i dati di esempio** lo fa a mano.
 **Cancella tutti i dati** (con doppia conferma) riporta l’app allo stato iniziale.
 
 ---
