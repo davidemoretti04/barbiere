@@ -661,3 +661,6 @@ html { touch-action: manipulation; }
 /* linea sotto la barra in alto: solo dopo aver scorso la pagina */
 .navbar, .navbar.solid { box-shadow: none !important; }
 .navbar.collapsed { box-shadow: 0 0.5px 0 var(--separator) !important; }
+
+/* i fogli degli appuntamenti restano sopra gli altri fogli (es. dettaglio statistiche) */
+.sheet-backdrop.elevated { z-index: 60; }

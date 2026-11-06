@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { goBack } from '../router';
+import { backLabel, goBack } from '../router';
 import { IconChevronLeft, RowChevron } from './Icons';
 
 export function Page({
@@ -8,15 +8,88 @@ export function Page({
   right,
   children,
   largeTitle = true,
+  swipeBackFallback,
 }: {
   title: string;
   left?: ReactNode;
   right?: ReactNode;
   children: ReactNode;
   largeTitle?: boolean;
+  /** Pagine con tasto indietro: scorrendo dal bordo sinistro verso destra si torna indietro. */
+  swipeBackFallback?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
+
+  // gesto «indietro» in stile iOS: la pagina segue il dito partendo dal bordo sinistro
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !swipeBackFallback) return;
+    const EDGE = 28;
+    let startX = 0;
+    let startY = 0;
+    let startT = 0;
+    let mode: 'idle' | 'pending' | 'drag' = 'idle';
+    const set = (dx: number, animate: boolean) => {
+      el.style.transition = animate ? 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)' : 'none';
+      el.style.transform = dx > 0 ? `translateX(${dx}px)` : '';
+      el.style.boxShadow = dx > 0 ? '-8px 0 24px rgba(0,0,0,0.12)' : '';
+    };
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (e.touches.length !== 1 || t.clientX > EDGE || document.documentElement.classList.contains('sheet-open')) {
+        mode = 'idle';
+        return;
+      }
+      startX = t.clientX;
+      startY = t.clientY;
+      startT = performance.now();
+      mode = 'pending';
+    };
+    const onMove = (e: TouchEvent) => {
+      if (mode === 'idle') return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (mode === 'pending') {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (dx > 0 && dx > Math.abs(dy)) mode = 'drag';
+        else {
+          mode = 'idle';
+          return;
+        }
+      }
+      if (e.cancelable) e.preventDefault();
+      set(Math.max(0, dx), false);
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (mode !== 'drag') {
+        mode = 'idle';
+        return;
+      }
+      mode = 'idle';
+      const dx = (e.changedTouches[0]?.clientX ?? startX) - startX;
+      const fast = dx / Math.max(1, performance.now() - startT) > 0.5;
+      if (dx > el.offsetWidth * 0.33 || (fast && dx > 40)) {
+        set(el.offsetWidth, true);
+        window.setTimeout(() => goBack(swipeBackFallback), 200);
+      } else set(0, true);
+    };
+    const onCancel = () => {
+      if (mode === 'drag') set(0, true);
+      mode = 'idle';
+    };
+    el.addEventListener('touchstart', onStart, { passive: true, capture: true });
+    el.addEventListener('touchmove', onMove, { passive: false, capture: true });
+    el.addEventListener('touchend', onEnd, { capture: true });
+    el.addEventListener('touchcancel', onCancel, { capture: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart, { capture: true });
+      el.removeEventListener('touchmove', onMove, { capture: true });
+      el.removeEventListener('touchend', onEnd, { capture: true });
+      el.removeEventListener('touchcancel', onCancel, { capture: true });
+    };
+  }, [swipeBackFallback]);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -42,11 +115,13 @@ export function Page({
   );
 }
 
+/** Tasto «indietro»: mostra da dove si è arrivati (es. «Appuntamento»), altrimenti `label`. */
 export function BackButton({ label, fallback }: { label: string; fallback: string }) {
+  const text = backLabel() ?? label;
   return (
-    <button className="nav-btn" onClick={() => goBack(fallback)} aria-label={`Indietro: ${label}`}>
+    <button className="nav-btn" onClick={() => goBack(fallback)} aria-label={`Indietro: ${text}`}>
       <IconChevronLeft />
-      {label}
+      {text}
     </button>
   );
 }

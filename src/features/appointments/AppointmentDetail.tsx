@@ -38,7 +38,7 @@ export function AppointmentDetail({
 
   if (!a) {
     return (
-      <Sheet title="Appuntamento" onClose={onClose}>
+      <Sheet elevated title="Appuntamento" onClose={onClose}>
         <p className="center muted">Caricamento…</p>
       </Sheet>
     );
@@ -62,14 +62,14 @@ export function AppointmentDetail({
   const noPhone = () => toast('Questo cliente non ha un numero di telefono valido.');
 
   return (
-    <Sheet title="Appuntamento" onClose={onClose}>
+    <Sheet elevated title="Appuntamento" onClose={onClose}>
       <div className="hero">
         <button
           type="button"
           onClick={() => {
             if (!client) return;
             onClose();
-            navigate(`/clienti/${client.id}`);
+            navigate(`/clienti/${client.id}`, { backLabel: 'Appuntamento', onReturn: () => ui.openDetail(a.id) });
           }}
           style={{ fontSize: 24, fontWeight: 700, color: 'var(--label)', minHeight: 44 }}
         >
@@ -95,7 +95,7 @@ export function AppointmentDetail({
           <Row
             onClick={() => {
               onClose();
-              navigate(`/clienti/${client.id}`);
+              navigate(`/clienti/${client.id}`, { backLabel: 'Appuntamento', onReturn: () => ui.openDetail(a.id) });
             }}
             leading={
               <span className="avatar" aria-hidden="true" style={{ width: 36, height: 36, fontSize: 14 }}>

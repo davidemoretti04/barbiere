@@ -138,7 +138,7 @@ export function StatDetailSheet({ target: initial, range, rangeLabel, appts, cli
                 chevron
                 onClick={() => {
                   onClose();
-                  navigate(`/clienti/${c.id}`);
+                  navigate(`/clienti/${c.id}`, { backLabel: STAT_TITLES[kind] });
                 }}
               />
             ))}

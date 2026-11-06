@@ -55,7 +55,7 @@ export function ServicesPage() {
   return (
     <Page
       title="Listino servizi"
-      left={<BackButton label="Altro" fallback="/altro" />}
+      left={<BackButton label="Altro" fallback="/altro" />} swipeBackFallback="/altro"
       right={
         <button type="button" className="nav-btn" onClick={() => setEditing('new')} aria-label="Nuovo servizio">
           <IconPlus />

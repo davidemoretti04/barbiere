@@ -217,6 +217,7 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
 
   return (
     <Sheet
+      elevated
       title={editing ? 'Modifica appuntamento' : 'Nuovo appuntamento'}
       onClose={onClose}
       tall

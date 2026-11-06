@@ -1,5 +1,5 @@
 import { subDays } from 'date-fns';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { IconChart, IconChevronLeft, IconChevronRight } from '../../components/Icons';
 import { EmptyState, Field, Page, Section, Segmented } from '../../components/ui';
@@ -24,7 +24,7 @@ import {
   type PeriodKind,
   type RankItem,
 } from '../../lib/stats';
-import { navigate } from '../../router';
+import { isReturning, navigate } from '../../router';
 import { StatDetailSheet, type StatDetailTarget } from './StatDetailSheet';
 import { useNow } from '../../hooks/useNow';
 
@@ -62,6 +62,7 @@ function rangeLabel(kind: PeriodKind, r: DateRange): string {
 }
 
 let saved: { kind: PeriodKind; range: DateRange } | null = null;
+let savedDetail: StatDetailTarget | null = null;
 
 export function StatsPage() {
   const appts = useAllAppointments();
@@ -74,7 +75,12 @@ export function StatsPage() {
     setStateRaw(s);
   };
   const { kind, range } = state;
-  const [detail, setDetail] = useState<StatDetailTarget | null>(null);
+  // tornando indietro (es. dalla scheda di un cliente) si riapre il dettaglio che era aperto
+  const [detail, setDetailState] = useState<StatDetailTarget | null>(() => (isReturning() ? savedDetail : null));
+  const setDetail = setDetailState;
+  useEffect(() => {
+    savedDetail = detail;
+  }, [detail]);
   const open = (k: StatDetailTarget['kind']) => () => setDetail({ kind: k });
 
   const setKind = (k: PeriodKind) => {

@@ -27,12 +27,12 @@ export function ClientDetailPage({ id }: { id: string }) {
 
   if (client === null) {
     return (
-      <Page title="Cliente" left={back} largeTitle={false}>
+      <Page title="Cliente" left={back} swipeBackFallback="/clienti" largeTitle={false}>
         <EmptyState title="Cliente non trovato" text="Potrebbe essere stato eliminato." />
       </Page>
     );
   }
-  if (!client) return <Page title="" left={back} largeTitle={false}>{null}</Page>;
+  if (!client) return <Page title="" left={back} swipeBackFallback="/clienti" largeTitle={false}>{null}</Page>;
 
   const s = clientStats(appts ?? [], id, now);
   const nextSeries = (appts ?? [])
@@ -58,7 +58,7 @@ export function ClientDetailPage({ id }: { id: string }) {
   return (
     <Page
       title={clientName(client)}
-      left={back}
+      left={back} swipeBackFallback="/clienti"
       largeTitle={false}
       right={
         client.deletedAt ? undefined : (

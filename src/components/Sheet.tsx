@@ -20,6 +20,7 @@ export function Sheet({
   children,
   tall,
   dismissable = true,
+  elevated = false,
 }: {
   title: string;
   onClose: () => void;
@@ -28,6 +29,8 @@ export function Sheet({
   children: ReactNode;
   tall?: boolean;
   dismissable?: boolean;
+  /** Sopra gli altri fogli (appuntamenti aperti sopra un dettaglio delle statistiche, ecc.). */
+  elevated?: boolean;
 }) {
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
@@ -191,7 +194,7 @@ export function Sheet({
   return createPortal(
     <div
       ref={backdropRef}
-      className="sheet-backdrop"
+      className={`sheet-backdrop ${elevated ? 'elevated' : ''}`}
       onClick={(e) => {
         if (e.target === e.currentTarget && dismissable) onClose();
       }}

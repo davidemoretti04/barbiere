@@ -16,6 +16,7 @@ import { planSeriesUpdate, repeatLabel, REPEAT_COUNT_OPTIONS, REPEAT_WEEKS_OPTIO
 import { atMinutes, fromDateKey, parseHM, toDateKey } from '../../lib/schedule';
 import { navigate } from '../../router';
 import { addToCalendar } from './calendar';
+import { useAppointmentUI } from './context';
 
 /** «Modifica ricorrenza»: cambia le impostazioni di tutti i prossimi appuntamenti di una serie. */
 export function SeriesSheet({ seriesId, onClose, onOpenDetail }: { seriesId: string; onClose: () => void; onOpenDetail: (id: string) => void }) {
@@ -26,7 +27,7 @@ export function SeriesSheet({ seriesId, onClose, onOpenDetail }: { seriesId: str
   const ref = future[0] ?? all[all.length - 1];
   if (!ref) {
     return (
-      <Sheet title="Ricorrenza" onClose={onClose}>
+      <Sheet elevated title="Ricorrenza" onClose={onClose}>
         <p className="center muted">Questa serie non esiste più.</p>
       </Sheet>
     );
@@ -55,6 +56,7 @@ function SeriesEditor({
   const client = useClient(next.clientId) ?? undefined;
   const services = useServices();
   const { toast, confirm } = useFeedback();
+  const ui = useAppointmentUI();
 
   const wasForever = future.some((a) => a.openEnded);
   const [date, setDate] = useState(toDateKey(new Date(next.start)));
@@ -136,6 +138,7 @@ function SeriesEditor({
 
   return (
     <Sheet
+      elevated
       title="Modifica ricorrenza"
       onClose={onClose}
       tall
@@ -160,7 +163,7 @@ function SeriesEditor({
           onClick={() => {
             if (!client) return;
             onClose();
-            navigate(`/clienti/${client.id}`);
+            navigate(`/clienti/${client.id}`, { backLabel: 'Ricorrenza', onReturn: () => ui.openSeries(seriesId) });
           }}
         >
           {clientName(client)}

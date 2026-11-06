@@ -171,7 +171,7 @@ export function BackupPage() {
   }
 
   return (
-    <Page title="Backup e dati" left={<BackButton label="Altro" fallback="/altro" />}>
+    <Page title="Backup e dati" left={<BackButton label="Altro" fallback="/altro" />} swipeBackFallback="/altro">
       <Section
         footer={
           <>

@@ -1,5 +1,5 @@
 import { addDays, addMonths, isSameDay, startOfDay } from 'date-fns';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BackupBanner } from '../../components/BackupBanner';
 import { useFeedback } from '../../components/feedback-context';
 import { IconCalendar, IconCalendarPlus, IconChat, IconCheck, IconUserPlus } from '../../components/Icons';
@@ -14,11 +14,13 @@ import { formatEuro } from '../../lib/money';
 import { whatsappLink } from '../../lib/phone';
 import { closureFor, nextFreeSlot, workRangesFor } from '../../lib/schedule';
 import { computeKpis, dayTotals, inactiveClients, percentChange, periodRange, type DateRange } from '../../lib/stats';
-import { navigate } from '../../router';
+import { isReturning, navigate } from '../../router';
 import { useAppointmentUI } from '../appointments/context';
 import { checkoutAllAtListPrice, listPrice } from '../../db/actions';
 import { ClientForm } from '../clients/ClientForm';
 import { AppointmentSwipeRow } from '../appointments/AppointmentSwipeRow';
+
+let savedHomeDetail: 'week' | 'month' | null = null;
 
 export function HomePage() {
   const now = useNow();
@@ -30,7 +32,11 @@ export function HomePage() {
   const [newClient, setNewClient] = useState(false);
   const [showAllPending, setShowAllPending] = useState(false);
   const expenses = useExpenses();
-  const [detail, setDetail] = useState<'week' | 'month' | null>(null);
+  const [detail, setDetailState] = useState<'week' | 'month' | null>(() => (isReturning() ? savedHomeDetail : null));
+  const setDetail = setDetailState;
+  useEffect(() => {
+    savedHomeDetail = detail;
+  }, [detail]);
 
   const byId = useMemo(() => new Map((clients ?? []).map((c) => [c.id, c])), [clients]);
   const todayMs = startOfDay(new Date(now)).getTime();

@@ -19,14 +19,14 @@ export function SettingsPage() {
   const { toast } = useFeedback();
   const [closureOpen, setClosureOpen] = useState(false);
   const now = useNow();
-  if (!settings) return <Page title="Impostazioni" left={<BackButton label="Altro" fallback="/altro" />}>{null}</Page>;
+  if (!settings) return <Page title="Impostazioni" left={<BackButton label="Altro" fallback="/altro" />} swipeBackFallback="/altro">{null}</Page>;
 
   const save = (patch: Partial<Settings>) => void updateSettings(patch);
   const problem = hoursProblem(settings.workingHours);
   const sampleText = reminderText(settings.reminderTemplate, { id: 'x', firstName: 'Marco', lastName: '', phone: '', notes: '', createdAt: 0 }, { start: now + 86400000 });
 
   return (
-    <Page title="Impostazioni" left={<BackButton label="Altro" fallback="/altro" />}>
+    <Page title="Impostazioni" left={<BackButton label="Altro" fallback="/altro" />} swipeBackFallback="/altro">
       <Section header="Orari di lavoro" group={false} footer={problem ?? 'Aggiungi più fasce per la pausa pranzo. Gli appuntamenti fuori orario sono permessi, con un avviso.'}>
         <WorkingHoursEditor value={settings.workingHours} onChange={(wh) => save({ workingHours: wh })} />
       </Section>

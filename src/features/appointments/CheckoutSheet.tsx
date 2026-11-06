@@ -37,6 +37,7 @@ export function CheckoutSheet({ appointment, onClose, onDone }: { appointment: A
 
   return (
     <Sheet
+      elevated
       title="Incasso"
       onClose={onClose}
       left={
