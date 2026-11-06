@@ -265,6 +265,19 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
             </button>
           }
         >
+          <div className="row" aria-hidden="true">
+            <span className="avatar" style={{ width: 34, height: 34, fontSize: 14 }}>
+              {newClient.first.trim() || newClient.last.trim() ? initials({ firstName: newClient.first.trim(), lastName: newClient.last.trim() }) : '+'}
+            </span>
+            <span className="row-main">
+              <span className="row-title" style={{ display: 'block' }}>
+                {[newClient.first, newClient.last].map((x) => x.trim()).filter(Boolean).join(' ') || 'Nuovo cliente'}
+              </span>
+              <span className="row-sub" style={{ display: 'block' }}>
+                {newClient.phone.trim() || 'Scrivi nome e telefono'}
+              </span>
+            </span>
+          </div>
           <Field label="Nome">
             <input
               autoFocus={!newClient.first}
@@ -314,6 +327,9 @@ export function AppointmentForm({ editing, prefill, onClose, onSaved }: Props) {
           </div>
           {results.map((c) => (
             <button key={c.id} type="button" className="row" onClick={() => setClientId(c.id)}>
+              <span className="avatar" aria-hidden="true" style={{ width: 34, height: 34, fontSize: 14 }}>
+                {initials(c)}
+              </span>
               <span className="row-main">
                 <span className="row-title" style={{ display: 'block' }}>
                   {clientName(c)}
