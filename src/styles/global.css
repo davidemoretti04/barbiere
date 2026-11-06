@@ -658,3 +658,6 @@ html { touch-action: manipulation; }
 /* data sotto il titolo grande (es. Home): nella stessa fascia */
 .large-title:has(+ .page-sub) { margin-bottom: 0; box-shadow: none; padding-bottom: 2px; }
 .large-title + .page-sub { background: var(--topbar); margin: 0 0 12px; padding: 0 16px 10px; box-shadow: 0 0.5px 0 var(--separator); }
+/* linea sotto la barra in alto: solo dopo aver scorso la pagina */
+.navbar, .navbar.solid { box-shadow: none !important; }
+.navbar.collapsed { box-shadow: 0 0.5px 0 var(--separator) !important; }
