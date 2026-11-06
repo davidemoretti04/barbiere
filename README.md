@@ -119,6 +119,8 @@ Le schede in basso sono: **Home · Agenda · Clienti · Statistiche · Spese · 
   oppure **Terminare la ricorrenza**. Per spostare un solo appuntamento usa *Modifica o sposta solo questo*.
 - **Annullare o eliminare**: scorri a sinistra una riga (o un blocco nella vista Giorno) oppure usa i tasti nel dettaglio.
   Per le serie scegli **Solo questo** o **Questo e i successivi** (che ferma la serie). «Non si è presentato» si segna come **Annullato**.
+- **Da incassare (Home)**: gli appuntamenti passati non ancora completati restano lì finché non li incassi o li annulli.
+  **Incassa tutto** li completa in un colpo al prezzo di listino, in contanti, senza mancia (con conferma e Annulla).
 - **Incassare**: tocca l’appuntamento → **Segna come completato** → controlla l’importo (sconto/extra),
   mancia e metodo di pagamento (facoltativi) → **Incassa**. Solo gli appuntamenti completati contano negli incassi.
 - **Promemoria**: dal dettaglio dell’appuntamento, **Promemoria** apre WhatsApp con il messaggio pronto

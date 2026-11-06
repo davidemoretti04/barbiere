@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import type { Appointment } from './types';
 import { db } from './db';
-import { deleteMany, saveAppointments, setStatusMany } from './actions';
+import { checkoutAllAtListPrice, deleteMany, listPrice, saveAppointments, setStatusMany } from './actions';
 import { buildSeries } from '../lib/recurrence';
 
 const first: Appointment = {
@@ -35,5 +35,30 @@ describe('azioni sulle serie', () => {
     expect(await db.appointments.where('seriesId').equals('S').count()).toBe(1);
     await undoDel();
     expect(await db.appointments.where('seriesId').equals('S').count()).toBe(6);
+  });
+});
+
+describe('incassa tutto', () => {
+  it('completa al prezzo di listino, in contanti, senza mancia; si può annullare', async () => {
+    const base: Appointment = {
+      id: 'x', clientId: 'c', start: 1, end: 2, status: 'programmato', tipCents: 0, notes: '',
+      services: [
+        { serviceId: 't', name: 'Taglio', priceCents: 1800, durationMinutes: 30 },
+        { serviceId: 'b', name: 'Barba', priceCents: 1000, durationMinutes: 20 },
+      ],
+      amountCents: 2500, // previsto con sconto
+    };
+    const noServices: Appointment = { ...base, id: 'y', services: [], amountCents: 1500 };
+    const done: Appointment = { ...base, id: 'z', status: 'completato', amountCents: 999, paymentMethod: 'carta' };
+    await db.appointments.bulkPut([base, noServices, done]);
+    expect(listPrice(base)).toBe(2800);
+    const undo = await checkoutAllAtListPrice(['x', 'y', 'z']);
+    const [a, b, c] = await db.appointments.bulkGet(['x', 'y', 'z']);
+    expect([a?.status, a?.amountCents, a?.paymentMethod, a?.tipCents]).toEqual(['completato', 2800, 'contanti', 0]);
+    expect([b?.status, b?.amountCents]).toEqual(['completato', 1500]);
+    expect([c?.amountCents, c?.paymentMethod]).toEqual([999, 'carta']); // già completato: non toccato
+    await undo();
+    expect((await db.appointments.get('x'))?.status).toBe('programmato');
+    expect((await db.appointments.get('y'))?.paymentMethod).toBeUndefined();
   });
 });

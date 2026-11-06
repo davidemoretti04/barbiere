@@ -206,3 +206,20 @@ export async function applySeriesUpdate(seriesId: string, plan: { removeIds: str
     });
   };
 }
+
+/** Prezzo di listino di un appuntamento (somma dei servizi; se non ce ne sono, l'importo previsto). */
+export const listPrice = (a: Appointment) => (a.services.length ? a.services.reduce((t, x) => t + x.priceCents, 0) : a.amountCents);
+
+/**
+ * «Incassa tutto»: segna come completati gli appuntamenti ancora programmati, al prezzo di listino,
+ * in contanti e senza mancia. Ritorna una funzione per annullare.
+ */
+export async function checkoutAllAtListPrice(ids: string[]): Promise<() => Promise<void>> {
+  const before = (await db.appointments.bulkGet(ids)).filter((a): a is Appointment => !!a && a.status === 'programmato');
+  await db.appointments.bulkPut(
+    before.map((a) => ({ ...a, status: 'completato' as const, amountCents: listPrice(a), tipCents: 0, paymentMethod: 'contanti' as const })),
+  );
+  return async () => {
+    await db.appointments.bulkPut(before);
+  };
+}

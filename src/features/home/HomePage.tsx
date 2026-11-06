@@ -16,6 +16,7 @@ import { closureFor, nextFreeSlot, workRangesFor } from '../../lib/schedule';
 import { computeKpis, dayTotals, inactiveClients, percentChange, periodRange, type DateRange } from '../../lib/stats';
 import { navigate } from '../../router';
 import { useAppointmentUI } from '../appointments/context';
+import { checkoutAllAtListPrice, listPrice } from '../../db/actions';
 import { ClientForm } from '../clients/ClientForm';
 import { AppointmentSwipeRow } from '../appointments/AppointmentSwipeRow';
 
@@ -25,8 +26,9 @@ export function HomePage() {
   const clients = useClients();
   const settings = useSettings();
   const ui = useAppointmentUI();
-  const { toast } = useFeedback();
+  const { toast, confirm } = useFeedback();
   const [newClient, setNewClient] = useState(false);
+  const [showAllPending, setShowAllPending] = useState(false);
   const expenses = useExpenses();
   const [detail, setDetail] = useState<'week' | 'month' | null>(null);
 
@@ -44,7 +46,8 @@ export function HomePage() {
     const prevMonth: DateRange = { start: addMonths(new Date(month.start), -1).getTime(), end: addMonths(new Date(now), -1).getTime() };
     const k = (r: DateRange) => computeKpis(appts, [], clients, r);
     const dayStart = startOfDay(new Date(now));
-    const pending = pendingCheckout(appts, now).filter((a) => a.start >= addDays(dayStart, -14).getTime());
+    // restano in elenco finché non vengono incassati o annullati, anche se vecchi
+    const pending = pendingCheckout(appts, now);
     return {
       today: dayTotals(appts, dayStart),
       remainingToday: appts.filter((a) => a.status === 'programmato' && isSameDay(a.start, dayStart) && a.end > now).length,
@@ -68,6 +71,20 @@ export function HomePage() {
   const [next, ...later] = data.upcoming;
   const progress = data.today.expectedCents ? Math.min(100, (data.today.collectedCents / data.today.expectedCents) * 100) : 0;
   const maxDay = Math.max(1, ...data.last7.map((d) => d.cents));
+
+  async function checkoutAll() {
+    if (!data) return;
+    const list = data.pending;
+    const total = list.reduce((t, a) => t + listPrice(a), 0);
+    const ok = await confirm({
+      title: `Incassare ${list.length} appuntamenti?`,
+      message: `Totale ${formatEuro(total)} al prezzo di listino, in contanti, senza mancia. Puoi correggerli uno per uno anche dopo.`,
+      confirmLabel: `Incassa tutto (${formatEuro(total)})`,
+    });
+    if (!ok) return;
+    const undo = await checkoutAllAtListPrice(list.map((a) => a.id));
+    toast({ message: `Incassati ${list.length} appuntamenti`, actionLabel: 'Annulla', onAction: () => void undo() });
+  }
 
   function newAppointment() {
     if (!settings || !appts) return;
@@ -128,8 +145,18 @@ export function HomePage() {
 
       {/* ----- Da incassare ----- */}
       {data.pending.length > 0 && (
-        <Section header={`Da incassare (${data.pending.length})`} footer="Appuntamenti già passati ancora da segnare come completati o annullati.">
-          {data.pending.slice(0, 5).map((a) => (
+        <Section
+          header={`Da incassare (${data.pending.length})`}
+          headerRight={
+            data.pending.length > 1 ? (
+              <button type="button" className="nav-btn" style={{ minHeight: 0, fontSize: 15, textTransform: 'none', fontWeight: 600 }} onClick={() => void checkoutAll()}>
+                Incassa tutto
+              </button>
+            ) : undefined
+          }
+          footer="Restano qui finché non li incassi o li annulli. «Incassa tutto» usa il prezzo di listino e i contanti."
+        >
+          {(showAllPending ? data.pending : data.pending.slice(0, 5)).map((a) => (
             <AppointmentSwipeRow key={a.id} appointment={a}>
             <div className="row">
               <button type="button" className="row-main" style={{ textAlign: 'left' }} onClick={() => ui.openDetail(a.id)}>
@@ -146,7 +173,9 @@ export function HomePage() {
             </div>
             </AppointmentSwipeRow>
           ))}
-          {data.pending.length > 5 && <Row title={<span className="muted">e altri {data.pending.length - 5}…</span>} onClick={() => navigate('/agenda')} />}
+          {data.pending.length > 5 && !showAllPending && (
+            <Row title={<span className="muted">e altri {data.pending.length - 5}… mostra tutti</span>} onClick={() => setShowAllPending(true)} />
+          )}
         </Section>
       )}
 
